@@ -18,6 +18,13 @@ the computer. Live at **https://ubermenschs.com**.
 | **Testing** | GoogleTest (backend, unit + Redis integration tests), Vitest + Testing Library + jsdom (frontend), oxlint |
 | **Infrastructure** | **Docker** (multi-stage build on Ubuntu 24.04), **Docker Compose** (local), **Render** (backend + Redis on a persistent disk, Blueprint in `render.yaml`), **Cloudflare** (Pages for the site, DNS) |
 
+## Latency
+
+Obtained a p50 latency of 93 ms (p95: 117 ms, p99: 135 ms) for the C++/Redis API over HTTPS from Romania to the Frankfurt server, measured over 1,000 sequential requests, each on a new connection including the TLS handshake.
+Once the connection was open, the first byte of the response arrived in 60 ms at p50 (82 ms at p95).
+
+<img width="697" height="137" alt="Image" src="https://github.com/user-attachments/assets/7bc9da2c-558c-44db-b2f5-4901888dac41" />
+
 ## Features
 
 - **Quotes in the header**: a random quote and background painting on every page, from the active quote set;

@@ -1,0 +1,2 @@
+date,label,url,mode,requests,failed,p50_ms,p95_ms,p99_ms,max_ms,avg_ms,first_byte_p50_ms,first_byte_p95_ms
+2026-11-06T20:42:09.303Z,"","https://api.ubermenschs.com/api/health",cold,1000,0,93.0,116.7,134.5,232.1,94.8,60.0,81.6
