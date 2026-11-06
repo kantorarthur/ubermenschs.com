@@ -26,6 +26,28 @@ Check that it works: open http://localhost:8080/api/health
 
 Stop with `docker compose down`. The Redis data stays in Docker volumes; `docker compose down -v` deletes it.
 
+## Tests
+
+```
+docker compose --profile test run --rm --build backend-tests
+```
+
+This builds the tests (GoogleTest) and runs them against the Redis primary from `compose.yaml`.
+They use Redis **database 15** and empty it before every test; the site's data lives in database 0
+and is never touched (the tests refuse to run on database 0).
+
+| File | What it checks |
+| --- | --- |
+| `tests/text_test.cpp` | trimming, character counting (UTF-8), email normalising, ids, length limits |
+| `tests/http_test.cpp` | reading cookies, the client IP with and without a trusted proxy |
+| `tests/crypto_test.cpp` | Argon2id hashes, password checks, random tokens, fingerprints |
+| `tests/user_store_test.cpp` | registration rules, unique emails, login |
+| `tests/session_store_test.cpp` | sessions: lookup, 30-day expiry, only fingerprints in Redis, logout |
+| `tests/preset_store_test.cpp` | presets and quotes, deleting everything of a preset, other users get 404, active preset |
+| `tests/rate_limiter_test.cpp` | limits, Retry-After, separate subjects, expiry, `check` and `reset` |
+
+If Redis cannot be reached, the Redis tests are skipped (not failed).
+
 ## Configuration
 
 | Variable | Default | Meaning |
@@ -82,7 +104,7 @@ A counter is increased and given its expiry in one Lua script, so a counter can 
 
 ```
 src/
-  main.cpp             server start and /api/health
+  main.cpp             server start and /api/health (everything else is the "core" library)
   auth_routes.*        register, login, logout, me; the session cookie
   user_store.*         accounts and sessions in Redis
   crypto.*             libsodium: password hashes, random tokens, fingerprints
@@ -96,4 +118,7 @@ src/
   text.*               trimming and length checks (counts characters, not bytes)
   errors.hpp           ValidationError 400, UnauthorizedError 401, NotFoundError 404, ConflictError 409,
                        TooManyRequestsError 429
+tests/
+  redis_fixture.hpp    connects the Redis tests to database 15 and empties it before each test
+  *_test.cpp           the tests (see the table above)
 ```

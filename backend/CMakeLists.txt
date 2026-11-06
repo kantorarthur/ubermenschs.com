@@ -6,13 +6,28 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+option(BUILD_TESTS "Also build the tests (needs GoogleTest from vcpkg)" OFF)
+
 # Libraries come from vcpkg (see vcpkg.json).
 find_package(Crow CONFIG REQUIRED)
 find_package(redis++ CONFIG REQUIRED)
 find_package(unofficial-sodium CONFIG REQUIRED)
 
-add_executable(server
-    src/main.cpp
+# vcpkg builds redis-plus-plus as a static library on Linux and a shared one on Windows.
+if(TARGET redis++::redis++_static)
+    set(REDIS_PLUS_PLUS redis++::redis++_static)
+else()
+    set(REDIS_PLUS_PLUS redis++::redis++)
+endif()
+
+if(MSVC)
+    set(WARNINGS /W4 /permissive-)
+else()
+    set(WARNINGS -Wall -Wextra -Wpedantic)
+endif()
+
+# Everything except main(), so the server and the tests share the same code.
+add_library(core STATIC
     src/auth_routes.cpp
     src/config.cpp
     src/crypto.cpp
@@ -24,18 +39,29 @@ add_executable(server
     src/text.cpp
     src/user_store.cpp
 )
+target_include_directories(core PUBLIC src)
+target_link_libraries(core PUBLIC Crow::Crow ${REDIS_PLUS_PLUS} unofficial-sodium::sodium)
+target_compile_options(core PRIVATE ${WARNINGS})
 
-# vcpkg builds redis-plus-plus as a static library on Linux and a shared one on Windows.
-if(TARGET redis++::redis++_static)
-    set(REDIS_PLUS_PLUS redis++::redis++_static)
-else()
-    set(REDIS_PLUS_PLUS redis++::redis++)
-endif()
+add_executable(server src/main.cpp)
+target_link_libraries(server PRIVATE core)
+target_compile_options(server PRIVATE ${WARNINGS})
 
-target_link_libraries(server PRIVATE Crow::Crow ${REDIS_PLUS_PLUS} unofficial-sodium::sodium)
+if(BUILD_TESTS)
+    enable_testing()
+    find_package(GTest CONFIG REQUIRED)
 
-if(MSVC)
-    target_compile_options(server PRIVATE /W4 /permissive-)
-else()
-    target_compile_options(server PRIVATE -Wall -Wextra -Wpedantic)
+    add_executable(tests
+        tests/crypto_test.cpp
+        tests/http_test.cpp
+        tests/preset_store_test.cpp
+        tests/rate_limiter_test.cpp
+        tests/session_store_test.cpp
+        tests/text_test.cpp
+        tests/user_store_test.cpp
+    )
+    target_link_libraries(tests PRIVATE core GTest::gtest GTest::gtest_main)
+    target_compile_options(tests PRIVATE ${WARNINGS})
+
+    add_test(NAME tests COMMAND tests)
 endif()

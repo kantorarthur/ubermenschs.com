@@ -1,8 +1,11 @@
-# Two stages: the first compiles the server with all its tools,
-# the second contains only the finished program, so the final image stays small.
+# Stages:
+#   deps   the compiler, vcpkg and all libraries (cached; rebuilt only when vcpkg.json changes)
+#   build  compiles the server
+#   tests  compiles and runs the tests  (docker compose --profile test run --rm backend-tests)
+#   (last) the final image: only the finished server, so it stays small
 
-# ---------- build ----------
-FROM ubuntu:24.04 AS build
+# ---------- deps ----------
+FROM ubuntu:24.04 AS deps
 
 # autoconf, automake and libtool: vcpkg builds libsodium with them.
 RUN apt-get update \
@@ -22,14 +25,23 @@ WORKDIR /src
 COPY vcpkg.json .
 RUN /opt/vcpkg/vcpkg install --triplet x64-linux --x-install-root=/src/vcpkg_installed
 
+ENV CMAKE_ARGS="-G Ninja -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake \
+    -DVCPKG_INSTALLED_DIR=/src/vcpkg_installed -DVCPKG_MANIFEST_INSTALL=OFF"
+
+# ---------- build ----------
+FROM deps AS build
 COPY CMakeLists.txt .
 COPY src ./src
-RUN cmake -B build -G Ninja \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake \
-        -DVCPKG_INSTALLED_DIR=/src/vcpkg_installed \
-        -DVCPKG_MANIFEST_INSTALL=OFF \
-    && cmake --build build
+RUN cmake -B build ${CMAKE_ARGS} -DBUILD_TESTS=OFF && cmake --build build --target server
+
+# ---------- tests ----------
+FROM deps AS tests
+COPY CMakeLists.txt .
+COPY src ./src
+COPY tests ./tests
+RUN cmake -B build ${CMAKE_ARGS} -DBUILD_TESTS=ON && cmake --build build --target tests
+CMD ["ctest", "--test-dir", "build", "--output-on-failure"]
 
 # ---------- run ----------
 FROM ubuntu:24.04

@@ -21,6 +21,8 @@ Then open http://localhost:5173.
 | `npm run build` | Type-check and build the static site into `dist/` |
 | `npm run preview` | Serve the built `dist/` locally |
 | `npm run lint` | Check the code with oxlint |
+| `npm test` | Run the tests once (Vitest) |
+| `npm run test:watch` | Run the tests again on every change |
 
 ## Where things are
 
@@ -37,5 +39,9 @@ src/
   assets/backgrounds/landscape/   backgrounds for wide screens
   assets/backgrounds/portrait/    backgrounds for phones
 ```
+
+Tests sit next to the code they test, as `*.test.ts` / `*.test.tsx` (dates, the random pick,
+the API client, the auth and presets API, QuoteBar). They run in a simulated browser (jsdom)
+and never call the real backend: `fetch` is replaced by prepared answers.
 
 To add a background, put a `.webp` file into `landscape/` or `portrait/`; no code change is needed.

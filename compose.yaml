@@ -1,6 +1,7 @@
 # Local development: the C++ backend and Redis (a primary and one replica).
 # Start everything:   docker compose up --build
 # Stop everything:    docker compose down          (the data stays in the volumes)
+# Run the tests:      docker compose --profile test run --rm --build backend-tests
 # The frontend runs separately: cd frontend && npm run dev
 
 services:
@@ -48,6 +49,21 @@ services:
       - noeviction
     volumes:
       - redis-replica-data:/data
+    depends_on:
+      redis-primary:
+        condition: service_healthy
+
+  # Only started by "--profile test". The tests use Redis database 15 and empty it;
+  # the site's data lives in database 0 and is not touched.
+  backend-tests:
+    profiles: ["test"]
+    build:
+      context: ./backend
+      target: tests
+    environment:
+      REDIS_HOST: redis-primary
+      REDIS_PORT: "6379"
+      TEST_REDIS_DB: "15"
     depends_on:
       redis-primary:
         condition: service_healthy
