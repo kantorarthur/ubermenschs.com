@@ -34,6 +34,47 @@ the computer. Live at **https://ubermenschs.com**.
 - **Security**: rate limits in Redis for login, registration, password changes and test notifications; CORS
   only for the site's own origins; push notifications only to the known push services.
 
+## Preview
+
+**1. Overview Page**
+
+<img width="1877" height="987" alt="Image" src="https://github.com/user-attachments/assets/5aec6dcf-07f7-42c1-ba7e-e977dde98363" />
+
+**2. Register/Login pages**
+
+<img width="1871" height="988" alt="Image" src="https://github.com/user-attachments/assets/5fedb84d-48c8-41a9-a5a7-993a3b0a2285" />
+
+<img width="1872" height="986" alt="Image" src="https://github.com/user-attachments/assets/1234f409-cdb1-4b89-9d25-3e704796435c" />
+
+**3. Set Quotes page**
+
+<img width="1873" height="988" alt="Image" src="https://github.com/user-attachments/assets/1529e60e-c1fb-48c9-a150-0aedb7a7ae05" />
+
+**4. Phone notifications**
+
+<img width="944" height="2046" alt="Image" src="https://github.com/user-attachments/assets/2de19a6c-d44a-4605-89a0-080da8aa4b7e" />
+
+**5. Computer notifications**
+
+<img width="331" height="227" alt="Image" src="https://github.com/user-attachments/assets/655ee967-e309-466b-b46c-414223609aef" />
+
+**6. Calendar**
+
+<img width="1873" height="988" alt="Image" src="https://github.com/user-attachments/assets/ec077a88-755c-4edf-a9c7-f4bec9da001f" />
+
+**7. Love each other**
+
+<img width="1874" height="987" alt="Image" src="https://github.com/user-attachments/assets/c681ba02-1e71-41d7-b6df-7e855b5627e6" />
+
+**8. Reminder**
+
+<img width="1874" height="980" alt="Image" src="https://github.com/user-attachments/assets/47237585-3c42-4942-97a8-354fc1971777" />
+
+**9. Philosophical Study Plan**
+
+<img width="1875" height="986" alt="Image" src="https://github.com/user-attachments/assets/65ac8ef2-761c-4df2-9821-6837dda5bf2a" />
+
+
 ## Architecture
 
 ```
@@ -109,6 +150,6 @@ docker run --rm -p 8080:8080 -e EMBEDDED_REDIS=true -e PORT=8080 -v ubermenschs-
 the data must still be there. If a deploy still goes wrong, Render (**Deploys → Rollback**) and Cloudflare Pages
 (**Deployments → Rollback to this deployment**) go back to the previous version in a minute.
 
-## Contact
+## Co-author
 
-Arthur Kantor · kantorarthur222@gmail.com
+Claude Code
