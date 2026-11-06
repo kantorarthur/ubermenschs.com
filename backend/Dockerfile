@@ -4,9 +4,11 @@
 # ---------- build ----------
 FROM ubuntu:24.04 AS build
 
+# autoconf, automake and libtool: vcpkg builds libsodium with them.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential cmake ninja-build git curl zip unzip tar pkg-config ca-certificates \
+        autoconf autoconf-archive automake libtool \
     && rm -rf /var/lib/apt/lists/*
 
 # vcpkg, pinned to a release so every build gets the same library versions.

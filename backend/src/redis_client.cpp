@@ -1,5 +1,7 @@
 #include "redis_client.hpp"
 
+#include <crow/logging.h>
+
 #include <chrono>
 #include <sstream>
 #include <string>
@@ -46,4 +48,18 @@ int connectedReplicas(sw::redis::Redis& redis)
         }
     }
     return -1;
+}
+
+void waitForReplica(sw::redis::Redis connection)
+{
+    try
+    {
+        const long long confirmed = connection.command<long long>("WAIT", "1", "100");
+        if(confirmed < 1)
+            CROW_LOG_WARNING << "WAIT: the replica did not confirm the write within 100 ms";
+    }
+    catch(const sw::redis::Error& error)
+    {
+        CROW_LOG_WARNING << "WAIT failed: " << error.what();
+    }
 }

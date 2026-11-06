@@ -41,5 +41,12 @@ Config loadConfig()
     config.redisHost = envOr("REDIS_HOST", "127.0.0.1");
     config.redisPort = portFromEnv("REDIS_PORT", 6379);
     config.redisPassword = envOr("REDIS_PASSWORD", "");
+
+    const std::string secure = envOr("COOKIE_SECURE", "false");
+    config.cookieSecure = secure == "true" || secure == "1";
+    config.cookieDomain = envOr("COOKIE_DOMAIN", "");
+
+    const std::string proxy = envOr("TRUST_PROXY", "false");
+    config.trustProxy = proxy == "true" || proxy == "1";
     return config;
 }

@@ -1,6 +1,7 @@
 # ubermenschs.com — backend
 
-C++20 server built with [Crow](https://crowcpp.org) (HTTP) and [redis-plus-plus](https://github.com/sewenew/redis-plus-plus) (Redis).
+C++20 server built with [Crow](https://crowcpp.org) (HTTP), [redis-plus-plus](https://github.com/sewenew/redis-plus-plus) (Redis)
+and [libsodium](https://libsodium.org) (password hashing).
 Libraries come from vcpkg (`vcpkg.json`).
 
 ## Run it with Docker (recommended)
@@ -33,12 +34,19 @@ Stop with `docker compose down`. The Redis data stays in Docker volumes; `docker
 | `REDIS_HOST` | `127.0.0.1` | Redis primary host (`redis-primary` inside compose) |
 | `REDIS_PORT` | `6379` | Redis primary port |
 | `REDIS_PASSWORD` | none | Redis password, if the server has one |
+| `COOKIE_SECURE` | `false` | `true` in production: the login cookie is sent only over HTTPS |
+| `COOKIE_DOMAIN` | none | e.g. `.ubermenschs.com` in production, so the cookie works for the site and the API |
+| `TRUST_PROXY` | `false` | `true` behind Render's proxy: the visitor's IP is read from `X-Forwarded-For`. Keep it `false` without a proxy, or anyone could fake their IP |
 
 ## Endpoints
 
 | Method | Path | Body | Answer |
 | --- | --- | --- | --- |
 | GET | `/api/health` | | 200 if the server and Redis answer, 503 if Redis does not |
+| POST | `/api/auth/register` | `{ email, username, password }` | 201 + the user, logged in (sets the cookie) |
+| POST | `/api/auth/login` | `{ email, password }` | 200 + the user, logged in; 401 if wrong |
+| POST | `/api/auth/logout` | | 204, logged out (clears the cookie) |
+| GET | `/api/auth/me` | | 200 + the logged-in user, or 401 |
 | GET | `/api/presets` | | the user's presets, with their quotes |
 | POST | `/api/presets` | `{ name }` | 201 + the new preset |
 | GET | `/api/presets/:id` | | one preset |
@@ -49,26 +57,43 @@ Stop with `docker compose down`. The Redis data stays in Docker volumes; `docker
 | GET | `/api/settings` | | `{ activePreset }`: `"standard"` or a preset id |
 | PUT | `/api/settings/active-preset` | `{ presetId }` | 204 |
 
-Errors come back as `{"error": "..."}` with 400 (bad data), 404 (not found) or 503 (Redis down).
-Until login exists, every request belongs to the test user `1`.
+Errors come back as `{"error": "..."}` with 400 (bad data), 401 (not logged in), 404 (not found),
+409 (email already used), 429 (too many attempts, with a `Retry-After` header in seconds) or 503 (Redis down).
 
-Try it from PowerShell (with `docker compose up` running):
+The preset routes need a logged-in user; `GET /api/settings` answers `"standard"` for visitors.
 
-```
-curl.exe -X POST -H "Content-Type: application/json" -d '{\"name\":\"Stoics\"}' http://localhost:8080/api/presets
-curl.exe http://localhost:8080/api/presets
-```
+How logins work:
+- Passwords (at least 10 characters) are stored only as Argon2id hashes.
+- A login creates a random 64-character token. The browser keeps it in the `session` cookie
+  (HttpOnly, SameSite=Lax, 30 days); Redis keeps only a BLAKE2b fingerprint of it, under `session:{fingerprint}`.
+- Logging out deletes the session in Redis and clears the cookie.
+
+Rate limits (`src/rate_limiter.hpp`, fixed windows counted in Redis under `ratelimit:{name}:{subject}`):
+
+| Limit | Counts | Max | Window |
+| --- | --- | --- | --- |
+| `login-ip` | every login attempt from one IP | 20 | 15 min |
+| `login-fail` | wrong passwords for one email, from any IP; cleared by a successful login | 5 | 15 min |
+| `register-ip` | new accounts from one IP | 5 | 1 hour |
+
+A counter is increased and given its expiry in one Lua script, so a counter can never be left without one.
 
 ## Code
 
 ```
 src/
   main.cpp             server start and /api/health
+  auth_routes.*        register, login, logout, me; the session cookie
+  user_store.*         accounts and sessions in Redis
+  crypto.*             libsodium: password hashes, random tokens, fingerprints
+  route_helpers.hpp    who is logged in, and turning errors into HTTP answers
+  rate_limiter.*       Redis counters that limit login and register attempts
   config.hpp/.cpp      settings from environment variables
   redis_client.*       the shared Redis client and the replica check
   preset_routes.*      the HTTP routes for presets and settings
   preset_store.*       reads and writes presets in Redis (keys, transactions, WAIT)
   http.*               JSON responses and reading request bodies
   text.*               trimming and length checks (counts characters, not bytes)
-  errors.hpp           ValidationError (400) and NotFoundError (404)
+  errors.hpp           ValidationError 400, UnauthorizedError 401, NotFoundError 404, ConflictError 409,
+                       TooManyRequestsError 429
 ```

@@ -2,6 +2,7 @@
   display: flex;
   gap: 10px;
   align-items: center;
+  min-height: 44px;
 }
 
 .secondary,
@@ -11,13 +12,16 @@
   min-height: 44px;
   padding: 0 18px;
   border-radius: 999px;
+  font: inherit;
   font-size: 15px;
   font-weight: 500;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .secondary {
   border: 1px solid var(--color-border-strong);
+  background: transparent;
   color: var(--color-text);
 }
 
@@ -25,7 +29,13 @@
   background: var(--color-hover);
 }
 
+.secondary:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
 .primary {
+  border: none;
   background: var(--color-accent);
   color: var(--color-on-accent);
   font-weight: 600;
@@ -33,4 +43,13 @@
 
 .primary:hover {
   filter: brightness(1.08);
+}
+
+.user {
+  max-width: 180px;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

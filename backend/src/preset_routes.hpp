@@ -1,6 +1,7 @@
 #pragma once
 
 #include "preset_store.hpp"
+#include "user_store.hpp"
 
 #include <crow.h>
 
@@ -16,5 +17,6 @@
 //   GET    /api/settings                         { activePreset }
 //   PUT    /api/settings/active-preset           { presetId }        → 204
 //
-// Errors are {"error": "..."} with 400 (bad data), 404 (not found) or 503 (Redis down).
-void addPresetRoutes(crow::SimpleApp& app, PresetStore& store);
+// Everything except GET /api/settings needs a logged-in user (otherwise 401).
+// Errors are {"error": "..."} with 400 (bad data), 401 (not logged in), 404 (not found) or 503 (Redis down).
+void addPresetRoutes(crow::SimpleApp& app, PresetStore& store, SessionStore& sessions);

@@ -1,16 +1,47 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import Page from '../components/Page.tsx'
+import LoginPrompt from '../components/LoginPrompt.tsx'
 import controls from '../components/Controls.module.css'
 import { LIMITS, STANDARD_PRESET_ID, createPreset, getPresets } from '../api/presets.ts'
+import { useAuth } from '../context/authContext.ts'
 import { useQuotes } from '../context/quoteContext.ts'
 import { standardQuotes } from '../data/standardQuotes.ts'
 import type { QuotePreset } from '../types/models.ts'
 import styles from './QuotesPage.module.css'
 
 export default function QuotesPage() {
-  const navigate = useNavigate()
+  const { user, isLoading } = useAuth()
   const { activePresetId } = useQuotes()
+
+  return (
+    <Page title="Set quotes" subtitle="Choose which quotes appear at the top of the site.">
+      <ul className={styles.presets}>
+        {/* "Standard quotes" is always first, for everyone. */}
+        <li>
+          <Link to="/quotes/standard" className={styles.preset}>
+            <span className={styles.presetName}>Standard quotes</span>
+            <span className={styles.meta}>
+              {activePresetId === STANDARD_PRESET_ID && <span className={controls.badge}>In the header</span>}
+              <span className={styles.presetCount}>{standardQuotes.length} quotes</span>
+            </span>
+          </Link>
+        </li>
+      </ul>
+
+      {!isLoading && !user && (
+        <LoginPrompt>Log in or create an account to make your own quote presets.</LoginPrompt>
+      )}
+
+      {/* key: a different user gets a freshly loaded list. */}
+      {user && <OwnPresets key={user.id} activePresetId={activePresetId} />}
+    </Page>
+  )
+}
+
+// The logged-in user's own presets and the "Add new quotes preset" form.
+function OwnPresets({ activePresetId }: { activePresetId: string }) {
+  const navigate = useNavigate()
 
   const [presets, setPresets] = useState<QuotePreset[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -19,7 +50,7 @@ export default function QuotesPage() {
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
-  // Load the user's presets when the page opens.
+  // Load the user's presets when the list appears.
   useEffect(() => {
     const request = new AbortController()
     getPresets()
@@ -57,37 +88,24 @@ export default function QuotesPage() {
   }
 
   return (
-    <Page title="Set quotes" subtitle="Choose which quotes appear at the top of the site.">
-      <ul className={styles.presets}>
-        {/* "Standard quotes" is always first. */}
-        <li>
-          <Link to="/quotes/standard" className={styles.preset}>
-            <span className={styles.presetName}>Standard quotes</span>
-            <span className={styles.meta}>
-              {activePresetId === STANDARD_PRESET_ID && (
-                <span className={controls.badge}>In the header</span>
-              )}
-              <span className={styles.presetCount}>{standardQuotes.length} quotes</span>
-            </span>
-          </Link>
-        </li>
-
-        {presets?.map((preset) => (
-          <li key={preset.id}>
-            <Link to={`/quotes/${preset.id}`} className={styles.preset}>
-              <span className={styles.presetName}>{preset.name}</span>
-              <span className={styles.meta}>
-                {activePresetId === preset.id && (
-                  <span className={controls.badge}>In the header</span>
-                )}
-                <span className={styles.presetCount}>
-                  {preset.quotes.length} {preset.quotes.length === 1 ? 'quote' : 'quotes'}
+    <>
+      {presets && presets.length > 0 && (
+        <ul className={styles.presets}>
+          {presets.map((preset) => (
+            <li key={preset.id}>
+              <Link to={`/quotes/${preset.id}`} className={styles.preset}>
+                <span className={styles.presetName}>{preset.name}</span>
+                <span className={styles.meta}>
+                  {activePresetId === preset.id && <span className={controls.badge}>In the header</span>}
+                  <span className={styles.presetCount}>
+                    {preset.quotes.length} {preset.quotes.length === 1 ? 'quote' : 'quotes'}
+                  </span>
                 </span>
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {loadError && <p className={controls.error}>{loadError}</p>}
 
@@ -119,11 +137,6 @@ export default function QuotesPage() {
           + Add new quotes preset
         </button>
       )}
-
-      <p className={controls.hint}>
-        Your presets are saved on the server. Until accounts exist, everyone using this copy of the site
-        shares the same presets.
-      </p>
-    </Page>
+    </>
   )
 }

@@ -31,6 +31,16 @@ std::size_t utf8Length(const std::string& text)
     return count;
 }
 
+std::string normalizeEmail(const std::string& email)
+{
+    std::string normalized = trim(email);
+    std::transform(normalized.begin(), normalized.end(), normalized.begin(), [](unsigned char c)
+    {
+        return static_cast<char>(std::tolower(c));
+    });
+    return normalized;
+}
+
 bool isId(const std::string& text)
 {
     if(text.empty() || text.size() > 18)

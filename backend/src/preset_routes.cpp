@@ -1,21 +1,13 @@
 #include "preset_routes.hpp"
 
-#include "errors.hpp"
-#include "http.hpp"
+#include "route_helpers.hpp"
 
-#include <sw/redis++/redis++.h>
-
+#include <optional>
 #include <string>
 #include <utility>
 
 namespace
 {
-    // TEMPORARY: until login exists (step 5), every request belongs to this test user.
-    std::string currentUserId(const crow::request&)
-    {
-        return "1";
-    }
-
     crow::json::wvalue toJson(const Quote& quote)
     {
         crow::json::wvalue json;
@@ -37,41 +29,17 @@ namespace
         json["quotes"] = std::move(quotes);
         return json;
     }
-
-    // Runs a route and turns our exceptions into the right HTTP answer,
-    // so each route only describes the successful case.
-    template <typename Handler>
-    crow::response handle(Handler&& handler)
-    {
-        try
-        {
-            return handler();
-        }
-        catch(const ValidationError& error)
-        {
-            return errorResponse(400, error.what());
-        }
-        catch(const NotFoundError& error)
-        {
-            return errorResponse(404, error.what());
-        }
-        catch(const sw::redis::Error& error)
-        {
-            CROW_LOG_ERROR << "Redis error: " << error.what();
-            return errorResponse(503, "The database is not available right now. Try again in a moment.");
-        }
-    }
 }
 
-void addPresetRoutes(crow::SimpleApp& app, PresetStore& store)
+void addPresetRoutes(crow::SimpleApp& app, PresetStore& store, SessionStore& sessions)
 {
     CROW_ROUTE(app, "/api/presets")
         .methods(crow::HTTPMethod::Get, crow::HTTPMethod::Post)
-        ([&store](const crow::request& request)
+        ([&store, &sessions](const crow::request& request)
     {
         return handle([&]()
         {
-            const std::string userId = currentUserId(request);
+            const std::string userId = requireUserId(request, sessions);
 
             if(request.method == crow::HTTPMethod::Get)
             {
@@ -89,11 +57,11 @@ void addPresetRoutes(crow::SimpleApp& app, PresetStore& store)
 
     CROW_ROUTE(app, "/api/presets/<string>")
         .methods(crow::HTTPMethod::Get, crow::HTTPMethod::Patch, crow::HTTPMethod::Delete)
-        ([&store](const crow::request& request, std::string presetId)
+        ([&store, &sessions](const crow::request& request, std::string presetId)
     {
         return handle([&]()
         {
-            const std::string userId = currentUserId(request);
+            const std::string userId = requireUserId(request, sessions);
 
             if(request.method == crow::HTTPMethod::Get)
             {
@@ -117,12 +85,12 @@ void addPresetRoutes(crow::SimpleApp& app, PresetStore& store)
 
     CROW_ROUTE(app, "/api/presets/<string>/quotes")
         .methods(crow::HTTPMethod::Post)
-        ([&store](const crow::request& request, std::string presetId)
+        ([&store, &sessions](const crow::request& request, std::string presetId)
     {
         return handle([&]()
         {
             const crow::json::rvalue body = jsonObjectBody(request);
-            const Quote quote = store.addQuote(currentUserId(request), presetId,
+            const Quote quote = store.addQuote(requireUserId(request, sessions), presetId,
                                                stringField(body, "text"), stringField(body, "author"));
             return jsonResponse(201, toJson(quote));
         });
@@ -130,35 +98,37 @@ void addPresetRoutes(crow::SimpleApp& app, PresetStore& store)
 
     CROW_ROUTE(app, "/api/presets/<string>/quotes/<string>")
         .methods(crow::HTTPMethod::Delete)
-        ([&store](const crow::request& request, std::string presetId, std::string quoteId)
+        ([&store, &sessions](const crow::request& request, std::string presetId, std::string quoteId)
     {
         return handle([&]()
         {
-            store.removeQuote(currentUserId(request), presetId, quoteId);
+            store.removeQuote(requireUserId(request, sessions), presetId, quoteId);
             return noContent();
         });
     });
 
     CROW_ROUTE(app, "/api/settings")
         .methods(crow::HTTPMethod::Get)
-        ([&store](const crow::request& request)
+        ([&store, &sessions](const crow::request& request)
     {
         return handle([&]()
         {
+            // Visitors always see Standard quotes in the header.
+            const std::optional<std::string> userId = sessionUserId(request, sessions);
             crow::json::wvalue body;
-            body["activePreset"] = store.activePreset(currentUserId(request));
+            body["activePreset"] = userId ? store.activePreset(*userId) : STANDARD_PRESET_ID;
             return jsonResponse(200, body);
         });
     });
 
     CROW_ROUTE(app, "/api/settings/active-preset")
         .methods(crow::HTTPMethod::Put)
-        ([&store](const crow::request& request)
+        ([&store, &sessions](const crow::request& request)
     {
         return handle([&]()
         {
             const crow::json::rvalue body = jsonObjectBody(request);
-            store.setActivePreset(currentUserId(request), stringField(body, "presetId"));
+            store.setActivePreset(requireUserId(request, sessions), stringField(body, "presetId"));
             return noContent();
         });
     });

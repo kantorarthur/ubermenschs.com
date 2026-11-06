@@ -1,8 +1,12 @@
+#include "auth_routes.hpp"
 #include "config.hpp"
+#include "crypto.hpp"
 #include "http.hpp"
 #include "preset_routes.hpp"
 #include "preset_store.hpp"
+#include "rate_limiter.hpp"
 #include "redis_client.hpp"
+#include "user_store.hpp"
 
 #include <crow.h>
 #include <sw/redis++/redis++.h>
@@ -52,8 +56,17 @@ int main()
         return 1;
     }
 
+    if(!initCrypto())
+    {
+        std::cerr << "libsodium could not be initialised\n";
+        return 1;
+    }
+
     std::unique_ptr<sw::redis::Redis> redis = makeRedisClient(config);
+    UserStore users(*redis);
+    SessionStore sessions(*redis);
     PresetStore presets(*redis);
+    RateLimiter limiter(*redis);
 
     crow::SimpleApp app;
     app.loglevel(crow::LogLevel::Info);
@@ -63,7 +76,8 @@ int main()
         return health(*redis);
     });
 
-    addPresetRoutes(app, presets);
+    addAuthRoutes(app, users, sessions, limiter, config);
+    addPresetRoutes(app, presets, sessions);
 
     CROW_LOG_INFO << "Redis at " << config.redisHost << ':' << config.redisPort;
 

@@ -1,9 +1,8 @@
 #include "preset_store.hpp"
 
 #include "errors.hpp"
+#include "redis_client.hpp"
 #include "text.hpp"
-
-#include <crow/logging.h>
 
 #include <algorithm>
 #include <iterator>
@@ -42,22 +41,6 @@ namespace
     {
         return requireText(name, limits::presetName, "The preset needs a name.",
                            "The name can have at most " + std::to_string(limits::presetName) + " characters.");
-    }
-
-    // Waits up to 100 ms for the replica to confirm the writes made on this connection.
-    // If it does not answer in time, the data is still safe on the primary; we only log it.
-    void waitForReplica(sw::redis::Redis connection)
-    {
-        try
-        {
-            const long long confirmed = connection.command<long long>("WAIT", "1", "100");
-            if(confirmed < 1)
-                CROW_LOG_WARNING << "WAIT: the replica did not confirm the write within 100 ms";
-        }
-        catch(const sw::redis::Error& error)
-        {
-            CROW_LOG_WARNING << "WAIT failed: " << error.what();
-        }
     }
 
     const std::string notFoundMessage = "This preset does not exist.";
