@@ -44,7 +44,7 @@ namespace
     }
 }
 
-void addAuthRoutes(crow::SimpleApp& app, UserStore& users, SessionStore& sessions, RateLimiter& limiter,
+void addAuthRoutes(WebApp& app, UserStore& users, SessionStore& sessions, RateLimiter& limiter,
                    const Config& config)
 {
     CROW_ROUTE(app, "/api/auth/register")

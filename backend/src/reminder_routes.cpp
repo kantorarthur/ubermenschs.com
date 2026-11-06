@@ -19,7 +19,7 @@ namespace
     }
 }
 
-void addReminderRoutes(crow::SimpleApp& app, ReminderStore& store, SessionStore& sessions)
+void addReminderRoutes(WebApp& app, ReminderStore& store, SessionStore& sessions)
 {
     CROW_ROUTE(app, "/api/reminders")
         .methods(crow::HTTPMethod::Get, crow::HTTPMethod::Post)

@@ -3,6 +3,7 @@
 #include "config.hpp"
 #include "rate_limiter.hpp"
 #include "user_store.hpp"
+#include "web_app.hpp"
 
 #include <crow.h>
 
@@ -16,5 +17,5 @@
 //
 // "Logged in" means the answer sets the HttpOnly "session" cookie.
 // Register and login are rate limited (see rateLimits): over the limit they answer 429.
-void addAuthRoutes(crow::SimpleApp& app, UserStore& users, SessionStore& sessions, RateLimiter& limiter,
+void addAuthRoutes(WebApp& app, UserStore& users, SessionStore& sessions, RateLimiter& limiter,
                    const Config& config);

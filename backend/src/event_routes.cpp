@@ -40,7 +40,7 @@ namespace
     }
 }
 
-void addEventRoutes(crow::SimpleApp& app, EventStore& store, SessionStore& sessions)
+void addEventRoutes(WebApp& app, EventStore& store, SessionStore& sessions)
 {
     CROW_ROUTE(app, "/api/events")
         .methods(crow::HTTPMethod::Get, crow::HTTPMethod::Post)

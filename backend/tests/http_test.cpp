@@ -46,11 +46,17 @@ TEST(ClientIp, WithoutTrustProxyUsesTheConnectionAddress)
     EXPECT_EQ(clientIp(request, false), "10.0.0.5");
 }
 
-TEST(ClientIp, WithTrustProxyUsesTheFirstForwardedAddress)
+TEST(ClientIp, WithTrustProxyUsesTheAddressThatOurProxyAdded)
 {
     crow::request request = requestWithHeader("X-Forwarded-For", " 1.2.3.4 , 10.0.0.1, 10.0.0.2");
     request.remote_ip_address = "10.0.0.2";
-    EXPECT_EQ(clientIp(request, true), "1.2.3.4");
+    // Render adds the address it saw at the end; anything before it came from the visitor.
+    EXPECT_EQ(clientIp(request, true), "10.0.0.2");
+
+    const crow::request faked = requestWithHeader("X-Forwarded-For", "1.1.1.1, 203.0.113.7");
+    EXPECT_EQ(clientIp(faked, true), "203.0.113.7");
+    const crow::request single = requestWithHeader("X-Forwarded-For", "203.0.113.7");
+    EXPECT_EQ(clientIp(single, true), "203.0.113.7");
 }
 
 TEST(ClientIp, WithTrustProxyButNoHeaderFallsBackToTheConnection)

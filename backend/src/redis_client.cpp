@@ -2,15 +2,28 @@
 
 #include <crow/logging.h>
 
+#include <atomic>
 #include <chrono>
 #include <sstream>
 #include <string>
+
+namespace
+{
+    std::atomic<int> expectedReplicas{0};
+}
+
+void setExpectedReplicas(int count)
+{
+    expectedReplicas = count;
+}
 
 std::unique_ptr<sw::redis::Redis> makeRedisClient(const Config& config)
 {
     sw::redis::ConnectionOptions connection;
     connection.host = config.redisHost;
     connection.port = config.redisPort;
+    if(!config.redisUser.empty())
+        connection.user = config.redisUser;
     if(!config.redisPassword.empty())
         connection.password = config.redisPassword;
 
@@ -52,10 +65,14 @@ int connectedReplicas(sw::redis::Redis& redis)
 
 void waitForReplica(sw::redis::Redis connection)
 {
+    const int replicas = expectedReplicas;
+    if(replicas == 0)
+        return;
+
     try
     {
-        const long long confirmed = connection.command<long long>("WAIT", "1", "100");
-        if(confirmed < 1)
+        const long long confirmed = connection.command<long long>("WAIT", std::to_string(replicas), "100");
+        if(confirmed < replicas)
             CROW_LOG_WARNING << "WAIT: the replica did not confirm the write within 100 ms";
     }
     catch(const sw::redis::Error& error)

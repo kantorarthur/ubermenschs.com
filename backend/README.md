@@ -40,6 +40,8 @@ and is never touched (the tests refuse to run on database 0).
 
 | File | What it checks |
 | --- | --- |
+| `tests/config_test.cpp` | reading `REDIS_URL` |
+| `tests/cors_test.cpp` | CORS headers only for the allowed sites, preflight answers |
 | `tests/text_test.cpp` | trimming, character counting (UTF-8), email normalising, ids, length limits |
 | `tests/http_test.cpp` | reading cookies, the client IP with and without a trusted proxy, true/false and optional fields |
 | `tests/datetime_test.cpp` | dates (leap years, 30 February), times, time zones, sorting numbers |
@@ -64,9 +66,14 @@ If Redis cannot be reached, the Redis tests are skipped (not failed).
 | `REDIS_HOST` | `127.0.0.1` | Redis primary host (`redis-primary` inside compose) |
 | `REDIS_PORT` | `6379` | Redis primary port |
 | `REDIS_PASSWORD` | none | Redis password, if the server has one |
+| `REDIS_URL` | none | `redis://[user:password@]host[:port]`, e.g. for a Redis hosted elsewhere; replaces the three above |
+| `EMBEDDED_REDIS` | `false` | `true` on Render: `docker-entrypoint.sh` starts Redis in the same container, data in `/data/redis` |
+| `REDIS_MAXMEMORY` | `200mb` | Memory limit of that embedded Redis (it refuses writes instead of deleting keys when full) |
+| `REDIS_REPLICAS` | `0` | How many replicas must confirm important writes (`WAIT`). `1` in docker compose, `0` on Render (no replica there) |
 | `COOKIE_SECURE` | `false` | `true` in production: the login cookie is sent only over HTTPS |
 | `COOKIE_DOMAIN` | none | e.g. `.ubermenschs.com` in production, so the cookie works for the site and the API |
-| `TRUST_PROXY` | `false` | `true` behind Render's proxy: the visitor's IP is read from `X-Forwarded-For`. Keep it `false` without a proxy, or anyone could fake their IP |
+| `TRUST_PROXY` | `false` | `true` behind Render's proxy: the visitor's IP is the last address in `X-Forwarded-For` (the one Render added; the ones before it can be faked). Keep it `false` without a proxy, and keep `api.ubermenschs.com` "DNS only" at Cloudflare (see DEPLOY.md) |
+| `ALLOWED_ORIGINS` | none | Comma-separated sites that may call the API from a browser (CORS), e.g. `https://ubermenschs.com`. Not needed locally (Vite forwards `/api`) |
 | `VAPID_PUBLIC_KEY` | none | The key pair that signs push notifications (base64url). Without it, a pair is made once and kept in Redis (`vapid:keys`), fine for local development. Set it in production |
 | `VAPID_PRIVATE_KEY` | none | Secret, like a password. Make a pair with `docker compose run --rm backend server --generate-vapid-keys`. Changing the pair later turns off notifications on every device until they are turned on again |
 | `VAPID_SUBJECT` | `https://ubermenschs.com` | How a push service can contact the site's owner: `https://...` or `mailto:...` |
@@ -176,6 +183,8 @@ src/
   preset_store.*       reads and writes presets in Redis (keys, transactions, WAIT)
   http.*               JSON responses and reading request bodies
   text.*               trimming and length checks (counts characters, not bytes)
+  web_app.hpp/.cpp     the Crow app type, with the CORS middleware
+docker-entrypoint.sh   starts the server in Docker (and Redis too, with EMBEDDED_REDIS=true)
   errors.hpp           ValidationError 400, UnauthorizedError 401, NotFoundError 404, ConflictError 409,
                        TooManyRequestsError 429
 tests/

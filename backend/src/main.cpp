@@ -15,6 +15,7 @@
 #include "reminder_scheduler.hpp"
 #include "reminder_store.hpp"
 #include "user_store.hpp"
+#include "web_app.hpp"
 #include "webpush_crypto.hpp"
 
 #include <crow.h>
@@ -78,6 +79,7 @@ int main(int argc, char** argv)
     }
 
     std::unique_ptr<sw::redis::Redis> redis = makeRedisClient(config);
+    setExpectedReplicas(config.redisReplicas);
     std::unique_ptr<VapidKeyStore> vapidKeys;
     try
     {
@@ -105,8 +107,9 @@ int main(int argc, char** argv)
     WebPushSender pushSender(*vapidKeys, config.vapidSubject);
     ReminderScheduler scheduler(*redis, pushSubscriptions, pushSender);
 
-    crow::SimpleApp app;
+    WebApp app;
     app.loglevel(crow::LogLevel::Info);
+    app.get_middleware<Cors>().allowedOrigins = config.allowedOrigins;
 
     CROW_ROUTE(app, "/api/health").methods(crow::HTTPMethod::Get)([&redis]()
     {

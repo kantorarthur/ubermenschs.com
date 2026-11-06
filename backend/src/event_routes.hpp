@@ -2,6 +2,7 @@
 
 #include "event_store.hpp"
 #include "user_store.hpp"
+#include "web_app.hpp"
 
 #include <crow.h>
 
@@ -13,4 +14,4 @@
 //   DELETE /api/events/:id    → 204
 //
 // All of them need a logged-in user (otherwise 401).
-void addEventRoutes(crow::SimpleApp& app, EventStore& store, SessionStore& sessions);
+void addEventRoutes(WebApp& app, EventStore& store, SessionStore& sessions);

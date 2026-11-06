@@ -31,7 +31,7 @@ namespace
     }
 }
 
-void addPresetRoutes(crow::SimpleApp& app, PresetStore& store, SessionStore& sessions)
+void addPresetRoutes(WebApp& app, PresetStore& store, SessionStore& sessions)
 {
     CROW_ROUTE(app, "/api/presets")
         .methods(crow::HTTPMethod::Get, crow::HTTPMethod::Post)

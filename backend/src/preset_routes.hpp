@@ -2,6 +2,7 @@
 
 #include "preset_store.hpp"
 #include "user_store.hpp"
+#include "web_app.hpp"
 
 #include <crow.h>
 
@@ -19,4 +20,4 @@
 //
 // Everything except GET /api/settings needs a logged-in user (otherwise 401).
 // Errors are {"error": "..."} with 400 (bad data), 401 (not logged in), 404 (not found) or 503 (Redis down).
-void addPresetRoutes(crow::SimpleApp& app, PresetStore& store, SessionStore& sessions);
+void addPresetRoutes(WebApp& app, PresetStore& store, SessionStore& sessions);
