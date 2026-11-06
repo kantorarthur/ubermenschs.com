@@ -13,7 +13,11 @@ find_package(redis++ CONFIG REQUIRED)
 add_executable(server
     src/main.cpp
     src/config.cpp
+    src/http.cpp
+    src/preset_routes.cpp
+    src/preset_store.cpp
     src/redis_client.cpp
+    src/text.cpp
 )
 
 # vcpkg builds redis-plus-plus as a static library on Linux and a shared one on Windows.

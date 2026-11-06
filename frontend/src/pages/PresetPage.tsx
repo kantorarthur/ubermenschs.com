@@ -26,6 +26,7 @@ export default function PresetPage() {
 
   // undefined = still loading, null = this preset does not exist
   const [preset, setPreset] = useState<QuotePreset | null | undefined>(undefined)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isBusy, setIsBusy] = useState(false)
 
@@ -39,15 +40,19 @@ export default function PresetPage() {
 
   // Load the preset whenever the URL points to a different one.
   useEffect(() => {
-    let cancelled = false
-    void getPreset(presetId).then((loaded) => {
-      if (!cancelled) {
-        setPreset(loaded ?? null)
-      }
-    })
-    return () => {
-      cancelled = true
-    }
+    const request = new AbortController()
+    getPreset(presetId)
+      .then((loaded) => {
+        if (!request.signal.aborted) {
+          setPreset(loaded ?? null)
+        }
+      })
+      .catch((e: unknown) => {
+        if (!request.signal.aborted) {
+          setLoadError(errorMessage(e))
+        }
+      })
+    return () => request.abort()
   }, [presetId])
 
   // Runs a change, then reloads the preset (and the header, if this preset feeds it).
@@ -110,13 +115,24 @@ export default function PresetPage() {
     }
   }
 
+  if (preset === undefined && loadError) {
+    return (
+      <Page title="Could not load this preset">
+        <p className={controls.error}>{loadError}</p>
+        <Link to="/quotes" className={styles.back}>
+          ← All presets
+        </Link>
+      </Page>
+    )
+  }
+
   if (preset === undefined) {
     return <Page title="Loading…" />
   }
 
   if (preset === null) {
     return (
-      <Page title="Preset not found" subtitle="It may have been deleted, or the page was refreshed.">
+      <Page title="Preset not found" subtitle="It may have been deleted.">
         <Link to="/quotes" className={styles.back}>
           ← All presets
         </Link>

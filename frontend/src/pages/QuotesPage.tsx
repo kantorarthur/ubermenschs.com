@@ -13,6 +13,7 @@ export default function QuotesPage() {
   const { activePresetId } = useQuotes()
 
   const [presets, setPresets] = useState<QuotePreset[] | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [isAdding, setIsAdding] = useState(false)
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -20,15 +21,19 @@ export default function QuotesPage() {
 
   // Load the user's presets when the page opens.
   useEffect(() => {
-    let cancelled = false
-    void getPresets().then((loaded) => {
-      if (!cancelled) {
-        setPresets(loaded)
-      }
-    })
-    return () => {
-      cancelled = true
-    }
+    const request = new AbortController()
+    getPresets()
+      .then((loaded) => {
+        if (!request.signal.aborted) {
+          setPresets(loaded)
+        }
+      })
+      .catch((e: unknown) => {
+        if (!request.signal.aborted) {
+          setLoadError(e instanceof Error ? e.message : 'Could not load your presets.')
+        }
+      })
+    return () => request.abort()
   }, [])
 
   async function handleCreate(event: FormEvent) {
@@ -84,6 +89,8 @@ export default function QuotesPage() {
         ))}
       </ul>
 
+      {loadError && <p className={controls.error}>{loadError}</p>}
+
       {isAdding ? (
         <form className={controls.form} onSubmit={handleCreate}>
           <label className={controls.field}>
@@ -114,8 +121,8 @@ export default function QuotesPage() {
       )}
 
       <p className={controls.hint}>
-        For now your presets are kept only until you refresh the page. Once accounts exist, they will be
-        saved to your account.
+        Your presets are saved on the server. Until accounts exist, everyone using this copy of the site
+        shares the same presets.
       </p>
     </Page>
   )

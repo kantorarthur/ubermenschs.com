@@ -5,18 +5,23 @@ import type { Quote } from '../types/models.ts'
 import { QuoteContext, type QuoteContextValue } from './quoteContext.ts'
 
 // Asks the API which preset is active and returns the quotes the header should use.
+// If the server cannot be reached, the header simply keeps showing Standard quotes.
 async function loadHeaderQuotes(): Promise<{ presetId: string; quotes: Quote[] }> {
-  const presetId = await getActivePresetId()
+  try {
+    const presetId = await getActivePresetId()
 
-  if (presetId !== STANDARD_PRESET_ID) {
-    const preset = await getPreset(presetId)
-    // An empty preset would leave the header blank, so Standard fills in until it has quotes.
-    if (preset && preset.quotes.length > 0) {
-      return { presetId, quotes: preset.quotes }
+    if (presetId !== STANDARD_PRESET_ID) {
+      const preset = await getPreset(presetId)
+      // An empty preset would leave the header blank, so Standard fills in until it has quotes.
+      if (preset && preset.quotes.length > 0) {
+        return { presetId, quotes: preset.quotes }
+      }
     }
-  }
 
-  return { presetId, quotes: standardQuotes }
+    return { presetId, quotes: standardQuotes }
+  } catch {
+    return { presetId: STANDARD_PRESET_ID, quotes: standardQuotes }
+  }
 }
 
 // Keeps track of the active preset for the whole app.

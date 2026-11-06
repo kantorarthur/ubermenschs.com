@@ -1,4 +1,7 @@
 #include "config.hpp"
+#include "http.hpp"
+#include "preset_routes.hpp"
+#include "preset_store.hpp"
 #include "redis_client.hpp"
 
 #include <crow.h>
@@ -12,15 +15,6 @@
 
 namespace
 {
-    // Builds a JSON response with the given HTTP status code.
-    crow::response jsonResponse(int status, const crow::json::wvalue& body)
-    {
-        crow::response response(status);
-        response.set_header("Content-Type", "application/json");
-        response.body = body.dump();
-        return response;
-    }
-
     // GET /api/health
     // 200 when the server and Redis both answer, 503 when Redis does not.
     crow::response health(sw::redis::Redis& redis)
@@ -59,14 +53,17 @@ int main()
     }
 
     std::unique_ptr<sw::redis::Redis> redis = makeRedisClient(config);
+    PresetStore presets(*redis);
 
     crow::SimpleApp app;
     app.loglevel(crow::LogLevel::Info);
 
-    CROW_ROUTE(app, "/api/health").methods(crow::HTTPMethod::GET)([&redis]()
+    CROW_ROUTE(app, "/api/health").methods(crow::HTTPMethod::Get)([&redis]()
     {
         return health(*redis);
     });
+
+    addPresetRoutes(app, presets);
 
     CROW_LOG_INFO << "Redis at " << config.redisHost << ':' << config.redisPort;
 
