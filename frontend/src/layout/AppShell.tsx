@@ -4,7 +4,7 @@ import QuoteBar from './QuoteBar.tsx'
 import AuthButtons from './AuthButtons.tsx'
 import Sidebar from './Sidebar.tsx'
 import { landscapeBackgrounds, portraitBackgrounds } from '../data/backgrounds.ts'
-import { standardQuotes } from '../data/standardQuotes.ts'
+import { useQuotes } from '../context/quoteContext.ts'
 import { useMediaQuery } from '../hooks/useMediaQuery.ts'
 import { useRandomOnChange } from '../hooks/useRandomOnChange.ts'
 import styles from './AppShell.module.css'
@@ -18,8 +18,10 @@ export default function AppShell() {
   const backgrounds = isPortrait ? portraitBackgrounds : landscapeBackgrounds
   const background = useRandomOnChange(backgrounds, `${location.key}|${isPortrait}`)
 
-  // Later: the quotes come from the user's active preset (Standard by default).
-  const quote = useRandomOnChange(standardQuotes, location.key)
+  // The quotes come from the active preset (Standard by default).
+  // `version` changes when the active preset or its quotes change, so the header picks again.
+  const { headerQuotes, version } = useQuotes()
+  const quote = useRandomOnChange(headerQuotes, `${location.key}|${version}`)
 
   return (
     <div className={styles.shell}>
