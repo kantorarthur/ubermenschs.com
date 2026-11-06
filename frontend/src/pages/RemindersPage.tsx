@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import Page from '../components/Page.tsx'
 import LoginPrompt from '../components/LoginPrompt.tsx'
+import NotificationSettings from '../components/NotificationSettings.tsx'
 import controls from '../components/Controls.module.css'
 import {
   REMINDER_LIMITS,
@@ -123,6 +124,8 @@ function ReminderList() {
 
   return (
     <Page title="Reminder" subtitle={SUBTITLE}>
+      <NotificationSettings />
+
       <form className={controls.form} onSubmit={handleCreate}>
         <div className={styles.newRow}>
           <label className={controls.field}>
@@ -245,7 +248,7 @@ function ReminderList() {
       )}
 
       <p className={controls.hint}>
-        Times are in your time zone ({zone}). Notifications start once the site can send them.
+        Times are in your time zone ({zone}). A notification goes to every device where notifications are on.
       </p>
     </Page>
   )

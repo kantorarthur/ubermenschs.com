@@ -47,9 +47,26 @@ namespace
     const std::string notFoundMessage = "This reminder does not exist.";
 }
 
-ReminderStore::ReminderStore(sw::redis::Redis& redis)
-    : redis_(redis)
+ReminderStore::ReminderStore(sw::redis::Redis& redis, Clock clock)
+    : redis_(redis), clock_(std::move(clock))
 {
+}
+
+std::chrono::sys_seconds ReminderStore::systemClock()
+{
+    return std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
+}
+
+void ReminderStore::schedule(const Reminder& reminder)
+{
+    if(!reminder.enabled)
+    {
+        redis_.zrem(DUE_REMINDERS_KEY, reminder.id);
+        return;
+    }
+
+    const auto next = nextReminderTime(reminder.time, reminder.timezone, clock_());
+    redis_.zadd(DUE_REMINDERS_KEY, reminder.id, static_cast<double>(next.time_since_epoch().count()));
 }
 
 bool ReminderStore::owns(const std::string& userId, const std::string& reminderId)
@@ -106,9 +123,12 @@ Reminder ReminderStore::create(const std::string& userId, const std::string& tim
         {"timezone", reminder.timezone},
     };
 
+    const auto next = nextReminderTime(reminder.time, reminder.timezone, clock_());
+
     auto transaction = redis_.transaction();
     transaction.hset(reminderKey(reminder.id), fields.begin(), fields.end())
-               .sadd(userRemindersKey(userId), reminder.id);
+               .sadd(userRemindersKey(userId), reminder.id)
+               .zadd(DUE_REMINDERS_KEY, reminder.id, static_cast<double>(next.time_since_epoch().count()));
     transaction.exec();
     waitForReplica(transaction.redis());
 
@@ -132,9 +152,14 @@ Reminder ReminderStore::update(const std::string& userId, const std::string& rem
     if(!owns(userId, reminderId))
         throw NotFoundError(notFoundMessage);
 
-    if(!fields.empty())
-        redis_.hset(reminderKey(reminderId), fields.begin(), fields.end());
-    return load(reminderId);
+    if(fields.empty())
+        return load(reminderId);
+
+    redis_.hset(reminderKey(reminderId), fields.begin(), fields.end());
+    const Reminder reminder = load(reminderId);
+    // A new time, time zone or on/off changes when it goes off next.
+    schedule(reminder);
+    return reminder;
 }
 
 void ReminderStore::remove(const std::string& userId, const std::string& reminderId)
@@ -144,6 +169,7 @@ void ReminderStore::remove(const std::string& userId, const std::string& reminde
 
     auto transaction = redis_.transaction();
     transaction.del(reminderKey(reminderId))
-               .srem(userRemindersKey(userId), reminderId);
+               .srem(userRemindersKey(userId), reminderId)
+               .zrem(DUE_REMINDERS_KEY, reminderId);
     transaction.exec();
 }

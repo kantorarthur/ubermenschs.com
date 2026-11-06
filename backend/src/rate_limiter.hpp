@@ -23,6 +23,8 @@ namespace rateLimits
     inline const RateLimit loginFailuresPerEmail{"login-fail", 5, std::chrono::minutes(15)};
     // New accounts from one IP address.
     inline const RateLimit registerPerIp{"register-ip", 5, std::chrono::hours(1)};
+    // Test notifications (the button on the Reminder page) of one user.
+    inline const RateLimit pushTestPerUser{"push-test", 5, std::chrono::minutes(10)};
 }
 
 // Fixed-window counters in Redis:

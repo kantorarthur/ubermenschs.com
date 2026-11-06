@@ -32,16 +32,29 @@ src/
   App.tsx         the list of routes
   layout/         AppShell, Logo, QuoteBar, AuthButtons, Sidebar
   pages/          one page per route
-  components/     shared pieces (Page)
+  components/     shared pieces (Page, NotificationSettings, ...)
   hooks/          useRandomOnChange, useMediaQuery
   data/           fixed content (standard quotes, background list)
   types/          data types shared with the C++ backend
   assets/backgrounds/landscape/   backgrounds for wide screens
   assets/backgrounds/portrait/    backgrounds for phones
+  utils/          dates, notifications
+public/
+  sw.js, manifest.webmanifest, icons/   the PWA files (see Notifications below)
 ```
 
-Tests sit next to the code they test, as `*.test.ts` / `*.test.tsx` (dates, the random pick,
-the API client, the auth, presets, events and reminders API, QuoteBar). They run in a simulated browser (jsdom)
-and never call the real backend: `fetch` is replaced by prepared answers.
+Tests sit next to the code they test, as `*.test.ts` / `*.test.tsx` (dates, the random pick, the API client,
+the auth, presets, events, reminders and push API, the notifications helpers, QuoteBar, NotificationSettings).
+They run in a simulated browser (jsdom) and never call the real backend: `fetch` is replaced by prepared answers.
 
 To add a background, put a `.webp` file into `landscape/` or `portrait/`; no code change is needed.
+
+## Notifications (PWA)
+
+- `public/manifest.webmanifest` and `public/icons/` let phones install the site like an app.
+- `public/sw.js` is the service worker: it shows the reminder notifications, also when no tab is open,
+  and opens the Reminder page when one is clicked.
+- `src/utils/notifications.ts` asks for permission and subscribes the browser; the panel on the Reminder page
+  (`src/components/NotificationSettings.tsx`) has the buttons.
+- Browsers allow this only on `https://` sites and on `localhost`. Locally, use Chrome, Edge or Firefox in a
+  normal (not private) window. On iPhone and iPad it works only after adding the site to the home screen.

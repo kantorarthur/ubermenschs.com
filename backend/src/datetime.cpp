@@ -108,3 +108,22 @@ long long dateTimeNumber(const std::string& dateTime)
     }
     return value;
 }
+
+std::chrono::sys_seconds nextReminderTime(const std::string& time, const std::string& timezone,
+                                          std::chrono::sys_seconds after)
+{
+    using namespace std::chrono;
+
+    const time_zone* zone = locate_zone(timezone);
+    const minutes timeOfDay = hours(number(time, 0, 2)) + minutes(number(time, 3, 2));
+
+    // Today at that time on the user's clock, or else tomorrow (or the day after, around a time change).
+    const local_days today = floor<days>(zone->to_local(after));
+    for(int day = 0; day <= 2; ++day)
+    {
+        const sys_seconds candidate = zone->to_sys(today + days(day) + timeOfDay, choose::earliest);
+        if(candidate > after)
+            return candidate;
+    }
+    throw std::runtime_error("no next reminder time found");
+}

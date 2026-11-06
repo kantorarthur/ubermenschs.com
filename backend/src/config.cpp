@@ -1,7 +1,10 @@
 #include "config.hpp"
 
+#include "push_store.hpp"
+
 #include <cstdlib>
 #include <stdexcept>
+#include <sstream>
 #include <string>
 
 namespace
@@ -32,6 +35,22 @@ namespace
             throw std::runtime_error(std::string(name) + " must be between 1 and 65535");
         return port;
     }
+
+    // "a.com, b.com" → {"a.com", "b.com"}
+    std::vector<std::string> splitList(const std::string& text)
+    {
+        std::vector<std::string> items;
+        std::stringstream stream(text);
+        std::string item;
+        while(std::getline(stream, item, ','))
+        {
+            const std::size_t first = item.find_first_not_of(' ');
+            const std::size_t last = item.find_last_not_of(' ');
+            if(first != std::string::npos)
+                items.push_back(item.substr(first, last - first + 1));
+        }
+        return items;
+    }
 }
 
 Config loadConfig()
@@ -48,5 +67,11 @@ Config loadConfig()
 
     const std::string proxy = envOr("TRUST_PROXY", "false");
     config.trustProxy = proxy == "true" || proxy == "1";
+
+    config.vapidPublicKey = envOr("VAPID_PUBLIC_KEY", "");
+    config.vapidPrivateKey = envOr("VAPID_PRIVATE_KEY", "");
+    config.vapidSubject = envOr("VAPID_SUBJECT", "https://ubermenschs.com");
+    const std::string hosts = envOr("PUSH_ALLOWED_HOSTS", "");
+    config.pushAllowedHosts = hosts.empty() ? DEFAULT_PUSH_HOSTS : splitList(hosts);
     return config;
 }

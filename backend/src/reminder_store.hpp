@@ -2,7 +2,9 @@
 
 #include <sw/redis++/redis++.h>
 
+#include <chrono>
 #include <cstddef>
+#include <functional>
 #include <optional>
 #include <string>
 #include <vector>
@@ -38,12 +40,21 @@ namespace limits
 //   next:reminder:id       counter for new ids (INCR)
 //   reminder:{id}          hash: userId, time, message, enabled ("1"/"0"), timezone
 //   user:{id}:reminders    set of the user's reminder ids
+//   reminders:due          sorted set of the reminders that are on; the score is the next moment
+//                          (seconds since 1970, UTC) the reminder goes off. ReminderScheduler reads it.
 //
 // A reminder of another user is reported as "does not exist" (NotFoundError), like presets.
+inline const std::string DUE_REMINDERS_KEY = "reminders:due";
+
 class ReminderStore
 {
 public:
-    explicit ReminderStore(sw::redis::Redis& redis);
+    // Gives the current time; tests pass a fixed one.
+    using Clock = std::function<std::chrono::sys_seconds()>;
+
+    explicit ReminderStore(sw::redis::Redis& redis, Clock clock = systemClock);
+
+    static std::chrono::sys_seconds systemClock();
 
     // Sorted by time of day.
     std::vector<Reminder> list(const std::string& userId);
@@ -57,6 +68,9 @@ public:
 private:
     bool owns(const std::string& userId, const std::string& reminderId);
     Reminder load(const std::string& reminderId);
+    // Puts the reminder into reminders:due at its next moment, or takes it out if it is off.
+    void schedule(const Reminder& reminder);
 
     sw::redis::Redis& redis_;
+    Clock clock_;
 };

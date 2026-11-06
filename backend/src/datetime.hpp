@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <string>
 
 // Checks for the date and time strings the frontend sends. They are local times
@@ -24,3 +25,11 @@ int daysBetween(const std::string& from, const std::string& to);
 // A number that sorts like the moment it describes, used as the score in Redis:
 // "2026-11-06T14:30" becomes 202611061430. Expects a string isLocalDateTime accepts.
 long long dateTimeNumber(const std::string& dateTime);
+
+// The next moment strictly after `after` when a daily reminder set for `time` ("HH:MM") in the time zone
+// `timezone` goes off, in UTC. Summer and winter time are handled:
+//   - a time that is skipped when the clocks go forward (02:30 on that night) goes off at the switch;
+//   - a time that happens twice when the clocks go back goes off only the first time.
+// Expects values isTimeOfDay and isTimeZone accept; throws std::runtime_error for an unknown time zone.
+std::chrono::sys_seconds nextReminderTime(const std::string& time, const std::string& timezone,
+                                          std::chrono::sys_seconds after);
