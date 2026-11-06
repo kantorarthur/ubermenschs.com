@@ -1,0 +1,64 @@
+/* Global styles: colors, fonts and resets shared by the whole site.
+   Component-specific styles live next to each component in *.module.css files. */
+
+:root {
+  --color-ground: #120e0a;
+  --color-text: #f3eee6;
+  --color-text-muted: #cfc6b8;
+  --color-accent: #e3ae55;
+  --color-on-accent: #1c1308;
+  --color-panel: rgba(18, 14, 10, 0.72);
+  --color-panel-strong: rgba(14, 11, 8, 0.62);
+  --color-border: rgba(243, 238, 230, 0.14);
+  --color-border-strong: rgba(243, 238, 230, 0.35);
+  --color-hover: rgba(243, 238, 230, 0.12);
+
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-sans: Inter, system-ui, sans-serif;
+
+  --radius: 14px;
+  --radius-small: 10px;
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-ground);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--color-accent);
+}
+
+button {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}

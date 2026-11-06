@@ -1,0 +1,51 @@
+// Data types shared with the C++ backend (see "Contractul API" in the plan).
+// The JSON the backend sends must have exactly these shapes.
+
+export interface User {
+  id: string
+  email: string
+  username: string
+}
+
+export interface Quote {
+  id: string
+  text: string
+  author: string
+}
+
+export interface QuotePreset {
+  id: string
+  name: string
+  quotes: Quote[]
+}
+
+export interface Story {
+  slug: string
+  title: string
+  philosopher: string
+  text: string
+}
+
+// A Bible passage on the "Love each other as I have loved you." page (fixed, in the frontend).
+export interface ScripturePassage {
+  id: string
+  reference: string // e.g. "John 15:12"
+  text: string // may contain line breaks between paragraphs
+}
+
+export interface CalendarEvent {
+  id: string
+  title: string
+  start: string // ISO date-time
+  end: string // ISO date-time
+  allDay: boolean
+  description: string
+}
+
+export interface Reminder {
+  id: string
+  time: string // "07:30"
+  message: string
+  enabled: boolean
+  timezone: string // e.g. "Europe/Bucharest"
+}

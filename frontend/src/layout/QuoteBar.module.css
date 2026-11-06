@@ -1,0 +1,39 @@
+.bar {
+  flex: 1 1 320px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+
+.text {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 26px;
+  line-height: 1.2;
+  color: var(--color-text);
+}
+
+.long {
+  font-size: 20px;
+  line-height: 1.25;
+}
+
+.author {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 720px) {
+  .text {
+    font-size: 21px;
+  }
+
+  .long {
+    font-size: 17px;
+  }
+}
