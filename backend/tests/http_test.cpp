@@ -1,6 +1,10 @@
+#include "errors.hpp"
 #include "http.hpp"
 
 #include <gtest/gtest.h>
+
+#include <optional>
+#include <string>
 
 namespace
 {
@@ -54,4 +58,22 @@ TEST(ClientIp, WithTrustProxyButNoHeaderFallsBackToTheConnection)
     crow::request request;
     request.remote_ip_address = "10.0.0.5";
     EXPECT_EQ(clientIp(request, true), "10.0.0.5");
+}
+
+TEST(Http, BoolAndOptionalFields)
+{
+    const crow::json::rvalue body = crow::json::load(R"({"on": true, "off": false, "name": "Ana", "count": 1})");
+
+    EXPECT_TRUE(boolField(body, "on"));
+    EXPECT_FALSE(boolField(body, "off"));
+    EXPECT_THROW(boolField(body, "name"), ValidationError);
+    EXPECT_THROW(boolField(body, "missing"), ValidationError);
+
+    EXPECT_EQ(optionalStringField(body, "name"), std::optional<std::string>("Ana"));
+    EXPECT_FALSE(optionalStringField(body, "missing"));
+    EXPECT_THROW(optionalStringField(body, "count"), ValidationError);
+
+    EXPECT_EQ(optionalBoolField(body, "off"), std::optional<bool>(false));
+    EXPECT_FALSE(optionalBoolField(body, "missing"));
+    EXPECT_THROW(optionalBoolField(body, "count"), ValidationError);
 }

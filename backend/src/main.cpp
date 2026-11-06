@@ -1,11 +1,15 @@
 #include "auth_routes.hpp"
 #include "config.hpp"
 #include "crypto.hpp"
+#include "event_routes.hpp"
+#include "event_store.hpp"
 #include "http.hpp"
 #include "preset_routes.hpp"
 #include "preset_store.hpp"
 #include "rate_limiter.hpp"
 #include "redis_client.hpp"
+#include "reminder_routes.hpp"
+#include "reminder_store.hpp"
 #include "user_store.hpp"
 
 #include <crow.h>
@@ -66,6 +70,8 @@ int main()
     UserStore users(*redis);
     SessionStore sessions(*redis);
     PresetStore presets(*redis);
+    EventStore events(*redis);
+    ReminderStore reminders(*redis);
     RateLimiter limiter(*redis);
 
     crow::SimpleApp app;
@@ -78,6 +84,8 @@ int main()
 
     addAuthRoutes(app, users, sessions, limiter, config);
     addPresetRoutes(app, presets, sessions);
+    addEventRoutes(app, events, sessions);
+    addReminderRoutes(app, reminders, sessions);
 
     CROW_LOG_INFO << "Redis at " << config.redisHost << ':' << config.redisPort;
 

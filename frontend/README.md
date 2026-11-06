@@ -41,7 +41,7 @@ src/
 ```
 
 Tests sit next to the code they test, as `*.test.ts` / `*.test.tsx` (dates, the random pick,
-the API client, the auth and presets API, QuoteBar). They run in a simulated browser (jsdom)
+the API client, the auth, presets, events and reminders API, QuoteBar). They run in a simulated browser (jsdom)
 and never call the real backend: `fetch` is replaced by prepared answers.
 
 To add a background, put a `.webp` file into `landscape/` or `portrait/`; no code change is needed.

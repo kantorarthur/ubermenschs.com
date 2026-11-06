@@ -31,11 +31,16 @@ add_library(core STATIC
     src/auth_routes.cpp
     src/config.cpp
     src/crypto.cpp
+    src/datetime.cpp
+    src/event_routes.cpp
+    src/event_store.cpp
     src/http.cpp
     src/preset_routes.cpp
     src/preset_store.cpp
     src/rate_limiter.cpp
     src/redis_client.cpp
+    src/reminder_routes.cpp
+    src/reminder_store.cpp
     src/text.cpp
     src/user_store.cpp
 )
@@ -53,9 +58,12 @@ if(BUILD_TESTS)
 
     add_executable(tests
         tests/crypto_test.cpp
+        tests/datetime_test.cpp
+        tests/event_store_test.cpp
         tests/http_test.cpp
         tests/preset_store_test.cpp
         tests/rate_limiter_test.cpp
+        tests/reminder_store_test.cpp
         tests/session_store_test.cpp
         tests/text_test.cpp
         tests/user_store_test.cpp

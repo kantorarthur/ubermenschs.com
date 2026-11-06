@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import Page from '../components/Page.tsx'
 import EventForm from '../components/EventForm.tsx'
+import LoginPrompt from '../components/LoginPrompt.tsx'
 import controls from '../components/Controls.module.css'
 import { createEvent, deleteEvent, getEvents, updateEvent, type EventInput } from '../api/events.ts'
+import { useAuth } from '../context/authContext.ts'
 import type { CalendarEvent } from '../types/models.ts'
 import {
   WEEKDAYS,
@@ -33,6 +35,23 @@ function timeLabel(event: CalendarEvent, dayKey: string): string {
 }
 
 export default function CalendarPage() {
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) {
+    return <Page title="Calendar" />
+  }
+  if (!user) {
+    return (
+      <Page title="Calendar">
+        <LoginPrompt>Log in to keep your events in your calendar.</LoginPrompt>
+      </Page>
+    )
+  }
+  // key: another user starts with a fresh calendar.
+  return <CalendarView key={user.id} />
+}
+
+function CalendarView() {
   // Read the clock once, when the page opens.
   const [todayKey] = useState(() => toDateKey(new Date()))
   const [view, setView] = useState(() => {
@@ -41,6 +60,7 @@ export default function CalendarPage() {
   })
   const [selectedDay, setSelectedDay] = useState(todayKey)
   const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [editing, setEditing] = useState<Editing>({ kind: 'none' })
   // Goes up after every change, so the events are loaded again.
   const [reloadCount, setReloadCount] = useState(0)
@@ -53,11 +73,18 @@ export default function CalendarPage() {
   // If the month changes before the answer arrives, the old answer is ignored.
   useEffect(() => {
     const request = new AbortController()
-    void getEvents(firstKey, lastKey).then((loaded) => {
-      if (!request.signal.aborted) {
-        setEvents(loaded)
-      }
-    })
+    getEvents(firstKey, lastKey)
+      .then((loaded) => {
+        if (!request.signal.aborted) {
+          setEvents(loaded)
+          setLoadError(null)
+        }
+      })
+      .catch((e: unknown) => {
+        if (!request.signal.aborted) {
+          setLoadError(e instanceof Error ? e.message : 'The events could not be loaded.')
+        }
+      })
     return () => request.abort()
   }, [firstKey, lastKey, reloadCount])
 
@@ -132,6 +159,8 @@ export default function CalendarPage() {
           </button>
         </div>
       </div>
+
+      {loadError && <p className={controls.error}>{loadError}</p>}
 
       <div className={styles.calendar}>
         <div className={styles.weekdays} aria-hidden="true">
@@ -231,8 +260,6 @@ export default function CalendarPage() {
             ))}
           </ul>
         )}
-
-        <p className={controls.hint}>For now events are kept only until you refresh the page.</p>
       </section>
     </Page>
   )

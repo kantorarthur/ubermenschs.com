@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import Page from '../components/Page.tsx'
+import LoginPrompt from '../components/LoginPrompt.tsx'
 import controls from '../components/Controls.module.css'
 import {
   REMINDER_LIMITS,
@@ -9,6 +10,7 @@ import {
   getReminders,
   updateReminder,
 } from '../api/reminders.ts'
+import { useAuth } from '../context/authContext.ts'
 import type { Reminder } from '../types/models.ts'
 import styles from './RemindersPage.module.css'
 
@@ -16,7 +18,27 @@ function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : 'Something went wrong.'
 }
 
+const SUBTITLE =
+  "Messages delivered as a notification every day at the time you choose. Turn one off when you don't want it."
+
 export default function RemindersPage() {
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) {
+    return <Page title="Reminder" subtitle={SUBTITLE} />
+  }
+  if (!user) {
+    return (
+      <Page title="Reminder" subtitle={SUBTITLE}>
+        <LoginPrompt>Log in to set your daily reminders.</LoginPrompt>
+      </Page>
+    )
+  }
+  // key: another user starts with a fresh list.
+  return <ReminderList key={user.id} />
+}
+
+function ReminderList() {
   const [reminders, setReminders] = useState<Reminder[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isBusy, setIsBusy] = useState(false)
@@ -30,13 +52,21 @@ export default function RemindersPage() {
   const [editTime, setEditTime] = useState('')
   const [editMessage, setEditMessage] = useState('')
 
+  const [zone] = useState(browserTimeZone)
+
   useEffect(() => {
     let cancelled = false
-    void getReminders().then((loaded) => {
-      if (!cancelled) {
-        setReminders(loaded)
-      }
-    })
+    getReminders()
+      .then((loaded) => {
+        if (!cancelled) {
+          setReminders(loaded)
+        }
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) {
+          setError(errorMessage(e))
+        }
+      })
     return () => {
       cancelled = true
     }
@@ -92,10 +122,7 @@ export default function RemindersPage() {
   }
 
   return (
-    <Page
-      title="Reminder"
-      subtitle="A message delivered as a notification every day at the time you choose. Turn it off when you don't want it."
-    >
+    <Page title="Reminder" subtitle={SUBTITLE}>
       <form className={controls.form} onSubmit={handleCreate}>
         <div className={styles.newRow}>
           <label className={controls.field}>
@@ -175,7 +202,11 @@ export default function RemindersPage() {
                 <span className={styles.time}>{reminder.time}</span>
                 <span className={styles.body}>
                   <span className={styles.message}>{reminder.message}</span>
-                  <span className={styles.status}>{reminder.enabled ? 'Every day' : 'Off'}</span>
+                  <span className={styles.status}>
+                    {reminder.enabled ? 'Every day' : 'Off'}
+                    {/* Set from another time zone (e.g. while travelling): say which one. */}
+                    {reminder.timezone !== zone && ` · ${reminder.timezone} time`}
+                  </span>
                 </span>
                 <span className={styles.controls}>
                   {/* A switch: a real button that screen readers announce as on/off. */}
@@ -214,8 +245,7 @@ export default function RemindersPage() {
       )}
 
       <p className={controls.hint}>
-        Times are in your time zone ({browserTimeZone()}). Notifications start once the site can send them; for now
-        reminders are kept only until you refresh the page.
+        Times are in your time zone ({zone}). Notifications start once the site can send them.
       </p>
     </Page>
   )

@@ -8,10 +8,11 @@
 FROM ubuntu:24.04 AS deps
 
 # autoconf, automake and libtool: vcpkg builds libsodium with them.
+# tzdata: the time zone database the reminders check their time zones against (the tests need it too).
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         build-essential cmake ninja-build git curl zip unzip tar pkg-config ca-certificates \
-        autoconf autoconf-archive automake libtool \
+        autoconf autoconf-archive automake libtool tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 # vcpkg, pinned to a release so every build gets the same library versions.
@@ -45,6 +46,11 @@ CMD ["ctest", "--test-dir", "build", "--output-on-failure"]
 
 # ---------- run ----------
 FROM ubuntu:24.04
+
+# tzdata: the time zone database (e.g. "Europe/Bucharest") for the reminders.
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata \
+    && rm -rf /var/lib/apt/lists/*
 
 # The server does not need to run as root.
 RUN useradd --system --no-create-home app

@@ -38,6 +38,32 @@ std::string stringField(const crow::json::rvalue& body, const std::string& name)
     return std::string(body[name].s());
 }
 
+bool boolField(const crow::json::rvalue& body, const std::string& name)
+{
+    const std::optional<bool> value = optionalBoolField(body, name);
+    if(!value)
+        throw ValidationError("The field \"" + name + "\" must be true or false.");
+    return *value;
+}
+
+std::optional<std::string> optionalStringField(const crow::json::rvalue& body, const std::string& name)
+{
+    if(!body.has(name))
+        return std::nullopt;
+    return stringField(body, name);
+}
+
+std::optional<bool> optionalBoolField(const crow::json::rvalue& body, const std::string& name)
+{
+    if(!body.has(name))
+        return std::nullopt;
+
+    const crow::json::type type = body[name].t();
+    if(type != crow::json::type::True && type != crow::json::type::False)
+        throw ValidationError("The field \"" + name + "\" must be true or false.");
+    return type == crow::json::type::True;
+}
+
 std::string cookieValue(const crow::request& request, const std::string& name)
 {
     // The browser sends all cookies in one header: "Cookie: a=1; session=abc; b=2".

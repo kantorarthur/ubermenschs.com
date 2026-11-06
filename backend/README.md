@@ -39,12 +39,15 @@ and is never touched (the tests refuse to run on database 0).
 | File | What it checks |
 | --- | --- |
 | `tests/text_test.cpp` | trimming, character counting (UTF-8), email normalising, ids, length limits |
-| `tests/http_test.cpp` | reading cookies, the client IP with and without a trusted proxy |
+| `tests/http_test.cpp` | reading cookies, the client IP with and without a trusted proxy, true/false and optional fields |
+| `tests/datetime_test.cpp` | dates (leap years, 30 February), times, time zones, sorting numbers |
 | `tests/crypto_test.cpp` | Argon2id hashes, password checks, random tokens, fingerprints |
 | `tests/user_store_test.cpp` | registration rules, unique emails, login |
 | `tests/session_store_test.cpp` | sessions: lookup, 30-day expiry, only fingerprints in Redis, logout |
 | `tests/preset_store_test.cpp` | presets and quotes, deleting everything of a preset, other users get 404, active preset |
 | `tests/rate_limiter_test.cpp` | limits, Retry-After, separate subjects, expiry, `check` and `reset` |
+| `tests/event_store_test.cpp` | events: order by start, which events touch a range, rules, update, delete, other users get 404, the 2000 limit |
+| `tests/reminder_store_test.cpp` | several reminders per user sorted by time, rules, partial changes, delete, other users get 404, the 20 limit |
 
 If Redis cannot be reached, the Redis tests are skipped (not failed).
 
@@ -78,11 +81,27 @@ If Redis cannot be reached, the Redis tests are skipped (not failed).
 | DELETE | `/api/presets/:id/quotes/:quoteId` | | 204 |
 | GET | `/api/settings` | | `{ activePreset }`: `"standard"` or a preset id |
 | PUT | `/api/settings/active-preset` | `{ presetId }` | 204 |
+| GET | `/api/events?from=YYYY-MM-DD&to=YYYY-MM-DD` | | the events touching those days (at most 400 days), by start |
+| POST | `/api/events` | `{ title, start, end, allDay, description }` | 201 + the new event |
+| PATCH | `/api/events/:id` | `{ title, start, end, allDay, description }` | the event (every field replaced) |
+| DELETE | `/api/events/:id` | | 204 |
+| GET | `/api/reminders` | | the user's reminders, by time of day |
+| POST | `/api/reminders` | `{ time, message, timezone }` | 201 + the new reminder (on) |
+| PATCH | `/api/reminders/:id` | any of `{ time, message, enabled, timezone }` | the reminder |
+| DELETE | `/api/reminders/:id` | | 204 |
 
 Errors come back as `{"error": "..."}` with 400 (bad data), 401 (not logged in), 404 (not found),
 409 (email already used), 429 (too many attempts, with a `Retry-After` header in seconds) or 503 (Redis down).
 
-The preset routes need a logged-in user; `GET /api/settings` answers `"standard"` for visitors.
+The preset, event and reminder routes need a logged-in user; `GET /api/settings` answers `"standard"` for visitors.
+
+Calendar and reminders:
+- `start` and `end` are local times like `2026-11-06T14:30`; an all-day event goes from `T00:00` to `T23:59`.
+- `time` is `HH:MM`; `timezone` is a name from the time zone database (`Europe/Bucharest`), checked with
+  `std::chrono::locate_zone` (the Docker images install `tzdata` for it).
+- A user can have up to 2000 events and 20 reminders.
+- Redis keys: `event:{id}` (hash) and `user:{id}:events` (sorted set, the score is the start as a number);
+  `reminder:{id}` (hash) and `user:{id}:reminders` (set).
 
 How logins work:
 - Passwords (at least 10 characters) are stored only as Argon2id hashes.
@@ -110,6 +129,11 @@ src/
   crypto.*             libsodium: password hashes, random tokens, fingerprints
   route_helpers.hpp    who is logged in, and turning errors into HTTP answers
   rate_limiter.*       Redis counters that limit login and register attempts
+  event_store.*        calendar events in Redis
+  event_routes.*       the HTTP routes for events
+  reminder_store.*     daily reminders in Redis
+  reminder_routes.*    the HTTP routes for reminders
+  datetime.*           checks for dates, times and time zones
   config.hpp/.cpp      settings from environment variables
   redis_client.*       the shared Redis client and the replica check
   preset_routes.*      the HTTP routes for presets and settings

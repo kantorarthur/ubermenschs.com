@@ -2,6 +2,7 @@
 
 #include <crow.h>
 
+#include <optional>
 #include <string>
 
 // A response whose body is the given JSON.
@@ -18,6 +19,14 @@ crow::json::rvalue jsonObjectBody(const crow::request& request);
 
 // A text field of a JSON object. Throws ValidationError if it is missing or not text.
 std::string stringField(const crow::json::rvalue& body, const std::string& name);
+
+// A true/false field of a JSON object. Throws ValidationError if it is missing or not true/false.
+bool boolField(const crow::json::rvalue& body, const std::string& name);
+
+// For changes where every field may be left out (PATCH): std::nullopt if the field is missing,
+// ValidationError if it is there with the wrong type.
+std::optional<std::string> optionalStringField(const crow::json::rvalue& body, const std::string& name);
+std::optional<bool> optionalBoolField(const crow::json::rvalue& body, const std::string& name);
 
 // The IP address of the visitor. Behind a proxy (Render), every request comes from the proxy,
 // so with trustProxy the address is taken from the X-Forwarded-For header the proxy adds.
