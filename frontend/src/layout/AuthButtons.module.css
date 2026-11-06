@@ -1,0 +1,36 @@
+.auth {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.secondary,
+.primary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.secondary {
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.secondary:hover {
+  background: var(--color-hover);
+}
+
+.primary {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 600;
+}
+
+.primary:hover {
+  filter: brightness(1.08);
+}

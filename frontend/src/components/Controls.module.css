@@ -1,0 +1,132 @@
+/* Buttons and form fields shared by several pages. */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.primary {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 600;
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--color-accent);
+  filter: brightness(1.08);
+}
+
+.danger {
+  border-color: rgba(240, 128, 112, 0.55);
+  color: #f5b3a8;
+}
+
+.danger:hover:not(:disabled) {
+  background: rgba(240, 128, 112, 0.14);
+}
+
+.small {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+/* A panel that holds a form. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(8px);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.input {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid rgba(243, 238, 230, 0.25);
+  border-radius: var(--radius-small);
+  background: rgba(10, 8, 6, 0.6);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.input::placeholder {
+  color: #a39a8d;
+}
+
+textarea.input {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.error {
+  padding: 10px 14px;
+  border: 1px solid rgba(240, 128, 112, 0.55);
+  border-radius: var(--radius-small);
+  background: rgba(240, 128, 112, 0.12);
+  color: #f5b3a8;
+  font-size: 14px;
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* "Showing in the header" badge. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border: 1px solid rgba(227, 174, 85, 0.6);
+  border-radius: 999px;
+  background: rgba(18, 14, 10, 0.8);
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}

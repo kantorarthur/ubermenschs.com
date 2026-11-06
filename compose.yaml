@@ -1,0 +1,57 @@
+# Local development: the C++ backend and Redis (a primary and one replica).
+# Start everything:   docker compose up --build
+# Stop everything:    docker compose down          (the data stays in the volumes)
+# The frontend runs separately: cd frontend && npm run dev
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8080:8080"   # http://localhost:8080/api/health
+    environment:
+      PORT: "8080"
+      REDIS_HOST: redis-primary   # the service name below, not localhost
+      REDIS_PORT: "6379"
+    depends_on:
+      redis-primary:
+        condition: service_healthy
+
+  redis-primary:
+    image: redis:7
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - always
+      - --maxmemory-policy
+      - noeviction
+    volumes:
+      - redis-primary-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # No "ports": Redis is reachable only by the other containers, not from outside.
+
+  redis-replica:
+    image: redis:7
+    command:
+      - redis-server
+      - --replicaof
+      - redis-primary
+      - "6379"
+      - --appendonly
+      - "yes"
+      - --maxmemory-policy
+      - noeviction
+    volumes:
+      - redis-replica-data:/data
+    depends_on:
+      redis-primary:
+        condition: service_healthy
+
+volumes:
+  redis-primary-data:
+  redis-replica-data:

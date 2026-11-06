@@ -1,0 +1,194 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.month {
+  font-size: 30px;
+}
+
+.calendar {
+  padding: 16px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(8px);
+}
+
+.weekdays,
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.weekdays {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.day {
+  min-width: 0;
+  min-height: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  background: rgba(10, 8, 6, 0.5);
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.day:hover {
+  border-color: var(--color-border-strong);
+}
+
+.otherMonth {
+  opacity: 0.45;
+}
+
+.dayNumber {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.today .dayNumber {
+  align-self: flex-start;
+  min-width: 26px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  text-align: center;
+}
+
+.selected {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+.chip {
+  overflow: hidden;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(227, 174, 85, 0.22);
+  font-size: 12px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.more {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.dayPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dayHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dayTitle {
+  font-size: 28px;
+}
+
+.events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.event {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 18px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(8px);
+}
+
+.eventTime {
+  flex: none;
+  min-width: 110px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-accent);
+}
+
+.eventBody {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eventTitle {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.eventDescription {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* Phones: smaller cells; each event becomes a thin bar, and its title shows in the list below. */
+@media (max-width: 720px) {
+  .calendar {
+    padding: 10px;
+  }
+
+  .weekdays,
+  .grid {
+    gap: 4px;
+  }
+
+  .day {
+    min-height: 52px;
+    padding: 4px;
+  }
+
+  .chip {
+    padding: 0;
+    height: 6px;
+    font-size: 0;
+  }
+
+  .more {
+    display: none;
+  }
+
+  .event {
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+}

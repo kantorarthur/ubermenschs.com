@@ -1,0 +1,64 @@
+.presets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.preset {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 18px 20px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(8px);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.preset:hover {
+  border-color: var(--color-accent);
+}
+
+.presetName {
+  min-width: 0;
+  font-family: var(--font-serif);
+  font-size: 24px;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.presetCount {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.addButton {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.addButton:hover {
+  border-color: var(--color-accent);
+  background: var(--color-hover);
+}
