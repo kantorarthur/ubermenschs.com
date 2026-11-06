@@ -36,8 +36,8 @@ export interface ScripturePassage {
 export interface CalendarEvent {
   id: string
   title: string
-  start: string // ISO date-time
-  end: string // ISO date-time
+  start: string // local date-time "2026-11-06T14:30"; all-day events start at T00:00
+  end: string // local date-time "2026-11-06T15:30"; all-day events end at T23:59
   allDay: boolean
   description: string
 }

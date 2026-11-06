@@ -1,0 +1,109 @@
+.newRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.grow {
+  flex: 1 1 260px;
+}
+
+.timeInput {
+  width: 140px;
+  font-variant-numeric: tabular-nums;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reminder {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  padding: 16px 20px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(8px);
+}
+
+.time {
+  min-width: 96px;
+  font-family: var(--font-serif);
+  font-size: 36px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.body {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.message {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.status {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* A turned-off reminder is dimmed. */
+.off .time,
+.off .message {
+  color: var(--color-text-muted);
+}
+
+/* The on/off switch. */
+.switch {
+  position: relative;
+  width: 52px;
+  height: 30px;
+  flex: none;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(243, 238, 230, 0.25);
+  cursor: pointer;
+}
+
+.switch[aria-checked='true'] {
+  background: var(--color-accent);
+}
+
+.knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-text);
+  transition: transform 0.15s ease;
+}
+
+.switch[aria-checked='true'] .knob {
+  transform: translateX(22px);
+}
+
+.switch:disabled {
+  cursor: wait;
+}
