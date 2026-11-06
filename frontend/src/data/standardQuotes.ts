@@ -20,7 +20,7 @@ export const standardQuotes: Quote[] = [
     author: 'Elbert Hubbard',
   },
   {
-    // TODO: author to be confirmed.
+    // The site's own quote.
     id: 'std-4',
     text: 'There is only one thing standing between you and the Übermensch you: discipline.',
     author: 'ubermenschs.com',

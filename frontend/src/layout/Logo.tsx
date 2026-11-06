@@ -10,7 +10,7 @@ export default function Logo() {
       <span className={styles.words}>
         <span className={styles.domain}>ubermenschs.com</span>
         <span className={styles.tagline}>
-          One step closer to the Übermensch than you were yesterday.
+          One step closer to the Übermensch
         </span>
       </span>
     </Link>

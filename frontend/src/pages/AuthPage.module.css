@@ -1,0 +1,10 @@
+/* Shared by the Log in and Register pages. */
+
+.form {
+  max-width: 440px;
+}
+
+.switch {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}

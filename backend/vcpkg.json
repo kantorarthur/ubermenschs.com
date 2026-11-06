@@ -3,6 +3,8 @@
   "version-string": "0.1.0",
   "dependencies": [
     "crow",
+    "gtest",
+    "libsodium",
     "redis-plus-plus"
   ]
 }

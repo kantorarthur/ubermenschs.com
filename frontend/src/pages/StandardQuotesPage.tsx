@@ -3,11 +3,13 @@ import { Link } from 'react-router'
 import Page from '../components/Page.tsx'
 import controls from '../components/Controls.module.css'
 import { STANDARD_PRESET_ID } from '../api/presets.ts'
+import { useAuth } from '../context/authContext.ts'
 import { useQuotes } from '../context/quoteContext.ts'
 import { standardQuotes } from '../data/standardQuotes.ts'
 import styles from './StandardQuotesPage.module.css'
 
 export default function StandardQuotesPage() {
+  const { user } = useAuth()
   const { activePresetId, setActive } = useQuotes()
   const isActive = activePresetId === STANDARD_PRESET_ID
   const [error, setError] = useState<string | null>(null)
@@ -27,8 +29,9 @@ export default function StandardQuotesPage() {
         ← All presets
       </Link>
 
+      {/* Visitors always see Standard in the header; choosing needs an account. */}
       <div className={controls.actions}>
-        {isActive ? (
+        {isActive || !user ? (
           <span className={controls.badge}>In the header</span>
         ) : (
           <button type="button" className={`${controls.button} ${controls.primary}`} onClick={chooseForHeader}>

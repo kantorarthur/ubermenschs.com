@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import Page from '../components/Page.tsx'
+import LoginPrompt from '../components/LoginPrompt.tsx'
 import controls from '../components/Controls.module.css'
 import {
   LIMITS,
@@ -10,6 +11,7 @@ import {
   getPreset,
   renamePreset,
 } from '../api/presets.ts'
+import { useAuth } from '../context/authContext.ts'
 import { useQuotes } from '../context/quoteContext.ts'
 import type { QuotePreset } from '../types/models.ts'
 import styles from './PresetPage.module.css'
@@ -20,6 +22,23 @@ function errorMessage(e: unknown): string {
 
 // One of the user's own presets: /quotes/:presetId
 export default function PresetPage() {
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) {
+    return <Page title="Loading…" />
+  }
+  if (!user) {
+    return (
+      <Page title="Quotes preset">
+        <LoginPrompt>Log in to see and edit your quote presets.</LoginPrompt>
+      </Page>
+    )
+  }
+  // key: switching users or presets starts with fresh data.
+  return <PresetEditor key={user.id} />
+}
+
+function PresetEditor() {
   const { presetId = '' } = useParams()
   const navigate = useNavigate()
   const { activePresetId, setActive, refresh } = useQuotes()

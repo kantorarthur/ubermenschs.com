@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { STANDARD_PRESET_ID, getActivePresetId, getPreset, setActivePreset } from '../api/presets.ts'
 import { standardQuotes } from '../data/standardQuotes.ts'
 import type { Quote } from '../types/models.ts'
+import { useAuth } from './authContext.ts'
 import { QuoteContext, type QuoteContextValue } from './quoteContext.ts'
 
 // Asks the API which preset is active and returns the quotes the header should use.
@@ -27,6 +28,10 @@ async function loadHeaderQuotes(): Promise<{ presetId: string; quotes: Quote[] }
 // Keeps track of the active preset for the whole app.
 // The header reads it; the Set quotes pages change it.
 export function QuoteProvider({ children }: { children: ReactNode }) {
+  // Each user has their own active preset, so the header reloads when someone logs in or out.
+  const { user } = useAuth()
+  const userId = user?.id ?? null
+
   const [activePresetId, setActivePresetId] = useState(STANDARD_PRESET_ID)
   const [headerQuotes, setHeaderQuotes] = useState<Quote[]>(standardQuotes)
   const [version, setVersion] = useState(0)
@@ -49,7 +54,7 @@ export function QuoteProvider({ children }: { children: ReactNode }) {
     [refresh],
   )
 
-  // Load the saved choice once, when the app starts.
+  // Load the saved choice when the app starts, and again after a login or logout.
   useEffect(() => {
     let cancelled = false
     void loadHeaderQuotes().then((loaded) => {
@@ -60,7 +65,7 @@ export function QuoteProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [apply])
+  }, [apply, userId])
 
   const value = useMemo<QuoteContextValue>(
     () => ({ activePresetId, headerQuotes, version, setActive, refresh }),
