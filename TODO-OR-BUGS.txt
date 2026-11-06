@@ -1,13 +1,13 @@
 1. BUG -- "View account details" and "Account Settings" are behind the main buttons
-(Set Quotes, Philosophical stories....) --- Need to fix (X - Not fixed yet)
+(Set Quotes, Philosophical stories....) --- Need to fix (X - Not fixed yet) -- Update: Fixed on 11/6/2026
 
-2. Add "Overview" -- That should be the main page -- Not added yet
+2. Add "Overview" -- That should be the main page -- Not added yet -- Update: Added on 11/6/2026
 
 3. Add "Contacts" at the end of the every page (there should be - Contact Owner:
 Arthur Kantor
-kantorarthur222@gmail.com) --- Not added yet
+kantorarthur222@gmail.com) --- Not added yet -- Update: added on 11/6/2026
 
-4. Need to check if Calendar events send notifications -- If not, add.
+4. Need to check if Calendar events send notifications -- If not, add. -- Added on 11/6/2026
 
-5. Need to add button "Download application"
+5. Need to add button "Download application" -- Added on 11/6/2026
 
