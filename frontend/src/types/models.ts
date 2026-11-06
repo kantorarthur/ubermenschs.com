@@ -5,6 +5,7 @@ export interface User {
   id: string
   email: string
   username: string
+  createdAt: number // when the account was made, in seconds since 1970 (UTC)
 }
 
 export interface Quote {

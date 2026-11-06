@@ -53,3 +53,103 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* The account menu of a logged-in user. */
+.menuContainer {
+  position: relative;
+}
+
+.accountButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 14px 0 6px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.accountButton:hover,
+.accountButton[aria-expanded='true'] {
+  background: var(--color-hover);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.chevron {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 210px;
+  padding: 6px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-small);
+  background: rgba(18, 14, 10, 0.96);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.item:hover,
+.item:focus-visible {
+  background: var(--color-hover);
+}
+
+.item:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.separator {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--color-border);
+}
+
+@media (max-width: 720px) {
+  .accountButton .user,
+  .accountButton .chevron {
+    display: none;
+  }
+
+  .accountButton {
+    padding: 0 6px;
+  }
+}

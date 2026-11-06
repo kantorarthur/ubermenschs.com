@@ -11,6 +11,8 @@ import RemindersPage from './pages/RemindersPage.tsx'
 import StudyPlanPage from './pages/StudyPlanPage.tsx'
 import LoginPage from './pages/LoginPage.tsx'
 import RegisterPage from './pages/RegisterPage.tsx'
+import AccountPage from './pages/AccountPage.tsx'
+import AccountSettingsPage from './pages/AccountSettingsPage.tsx'
 import NotFoundPage from './pages/NotFoundPage.tsx'
 
 // Every page renders inside AppShell (background, header, sidebar);
@@ -31,6 +33,8 @@ export default function App() {
         <Route path="study-plan" element={<StudyPlanPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
+        <Route path="account" element={<AccountPage />} />
+        <Route path="account/settings" element={<AccountSettingsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

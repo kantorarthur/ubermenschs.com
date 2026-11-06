@@ -11,6 +11,7 @@
 #include <iterator>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace
 {
@@ -27,6 +28,23 @@ namespace
     std::string sessionKey(const std::string& token)
     {
         return "session:" + fingerprint(token);
+    }
+
+    std::string userSessionsKey(const std::string& userId)
+    {
+        return "user:" + userId + ":sessions";
+    }
+
+    long long toNumber(const std::string& text)
+    {
+        try
+        {
+            return std::stoll(text);
+        }
+        catch(const std::exception&)
+        {
+            return 0;
+        }
     }
 
     // A simple shape check: something@something.something, without spaces.
@@ -88,6 +106,7 @@ User UserStore::registerUser(const std::string& email, const std::string& userna
     // Hash first: it is the slow part, and a failure here leaves nothing behind in Redis.
     const std::string passwordHash = hashPassword(checkPassword(password));
     const std::string userId = std::to_string(redis_.incr("next:user:id"));
+    const std::string createdAt = secondsSinceEpoch();
 
     // SET ... NX succeeds only for the first account with this email, even if two people
     // register with it at the same moment.
@@ -105,11 +124,11 @@ User UserStore::registerUser(const std::string& email, const std::string& userna
     transaction.hset(userKey(userId), "email", cleanEmail)
                .hset(userKey(userId), "username", cleanUsername)
                .hset(userKey(userId), "passwordHash", passwordHash)
-               .hset(userKey(userId), "createdAt", secondsSinceEpoch());
+               .hset(userKey(userId), "createdAt", createdAt);
     transaction.exec();
     waitForReplica(transaction.redis());
 
-    return User{userId, cleanEmail, cleanUsername};
+    return User{userId, cleanEmail, cleanUsername, toNumber(createdAt)};
 }
 
 std::optional<User> UserStore::authenticate(const std::string& email, const std::string& password)
@@ -123,7 +142,7 @@ std::optional<User> UserStore::authenticate(const std::string& email, const std:
     if(fields.empty() || !verifyPassword(fields["passwordHash"], password))
         return std::nullopt;
 
-    return User{*userId, fields["email"], fields["username"]};
+    return User{*userId, fields["email"], fields["username"], toNumber(fields["createdAt"])};
 }
 
 std::optional<User> UserStore::findById(const std::string& userId)
@@ -133,7 +152,17 @@ std::optional<User> UserStore::findById(const std::string& userId)
     if(fields.empty())
         return std::nullopt;
 
-    return User{userId, fields["email"], fields["username"]};
+    return User{userId, fields["email"], fields["username"], toNumber(fields["createdAt"])};
+}
+
+void UserStore::changePassword(const std::string& userId, const std::string& currentPassword,
+                               const std::string& newPassword)
+{
+    const auto hash = redis_.hget(userKey(userId), "passwordHash");
+    if(!hash || !verifyPassword(*hash, currentPassword))
+        throw UnauthorizedError("The current password is wrong.");
+
+    redis_.hset(userKey(userId), "passwordHash", hashPassword(checkPassword(newPassword)));
 }
 
 SessionStore::SessionStore(sw::redis::Redis& redis)
@@ -144,7 +173,13 @@ SessionStore::SessionStore(sw::redis::Redis& redis)
 std::string SessionStore::create(const std::string& userId)
 {
     const std::string token = randomToken();
-    redis_.set(sessionKey(token), userId, std::chrono::duration_cast<std::chrono::milliseconds>(sessionLifetime));
+    const auto lifetime = std::chrono::duration_cast<std::chrono::seconds>(sessionLifetime);
+
+    auto transaction = redis_.transaction();
+    transaction.set(sessionKey(token), userId, lifetime)
+               .sadd(userSessionsKey(userId), fingerprint(token))
+               .expire(userSessionsKey(userId), lifetime); // the list lives as long as the newest session
+    transaction.exec();
     return token;
 }
 
@@ -162,6 +197,31 @@ std::optional<std::string> SessionStore::userIdFor(const std::string& token)
 
 void SessionStore::remove(const std::string& token)
 {
-    if(token.size() == 64)
-        redis_.del(sessionKey(token));
+    if(token.size() != 64)
+        return;
+
+    const auto userId = redis_.get(sessionKey(token));
+    auto transaction = redis_.transaction();
+    transaction.del(sessionKey(token));
+    if(userId)
+        transaction.srem(userSessionsKey(*userId), fingerprint(token));
+    transaction.exec();
+}
+
+void SessionStore::removeAllExcept(const std::string& userId, const std::string& keepToken)
+{
+    const std::string keep = keepToken.size() == 64 ? fingerprint(keepToken) : "";
+
+    std::vector<std::string> fingerprints;
+    redis_.smembers(userSessionsKey(userId), std::back_inserter(fingerprints));
+
+    auto transaction = redis_.transaction();
+    for(const std::string& sessionFingerprint : fingerprints)
+    {
+        if(sessionFingerprint == keep)
+            continue;
+        transaction.del("session:" + sessionFingerprint)
+                   .srem(userSessionsKey(userId), sessionFingerprint);
+    }
+    transaction.exec();
 }

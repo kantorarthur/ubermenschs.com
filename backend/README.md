@@ -80,7 +80,8 @@ If Redis cannot be reached, the Redis tests are skipped (not failed).
 | POST | `/api/auth/register` | `{ email, username, password }` | 201 + the user, logged in (sets the cookie) |
 | POST | `/api/auth/login` | `{ email, password }` | 200 + the user, logged in; 401 if wrong |
 | POST | `/api/auth/logout` | | 204, logged out (clears the cookie) |
-| GET | `/api/auth/me` | | 200 + the logged-in user, or 401 |
+| GET | `/api/auth/me` | | 200 + the logged-in user (`id`, `email`, `username`, `createdAt`), or 401 |
+| POST | `/api/auth/password` | `{ currentPassword, newPassword }` | 204; every other device of the account is logged out. 400 if the current password is wrong |
 | GET | `/api/presets` | | the user's presets, with their quotes |
 | POST | `/api/presets` | `{ name }` | 201 + the new preset |
 | GET | `/api/presets/:id` | | one preset |
@@ -134,6 +135,8 @@ How logins work:
 - A login creates a random 64-character token. The browser keeps it in the `session` cookie
   (HttpOnly, SameSite=Lax, 30 days); Redis keeps only a BLAKE2b fingerprint of it, under `session:{fingerprint}`.
 - Logging out deletes the session in Redis and clears the cookie.
+- `user:{id}:sessions` lists the fingerprints of an account's sessions; changing the password ends all of them
+  except the one of the device that changed it.
 
 Rate limits (`src/rate_limiter.hpp`, fixed windows counted in Redis under `ratelimit:{name}:{subject}`):
 
@@ -142,6 +145,8 @@ Rate limits (`src/rate_limiter.hpp`, fixed windows counted in Redis under `ratel
 | `login-ip` | every login attempt from one IP | 20 | 15 min |
 | `login-fail` | wrong passwords for one email, from any IP; cleared by a successful login | 5 | 15 min |
 | `register-ip` | new accounts from one IP | 5 | 1 hour |
+| `password-fail` | wrong current passwords when changing the password, per account; cleared by a success | 5 | 15 min |
+| `push-test` | test notifications, per account | 5 | 10 min |
 
 A counter is increased and given its expiry in one Lua script, so a counter can never be left without one.
 

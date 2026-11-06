@@ -28,9 +28,13 @@ TEST_F(SessionStoreTest, RedisKeepsOnlyAFingerprintOfTheToken)
 
     std::vector<std::string> keys;
     redis->keys("*", std::back_inserter(keys));
-    ASSERT_EQ(keys.size(), 1u);
-    EXPECT_EQ(keys[0], "session:" + fingerprint(token));
-    EXPECT_EQ(keys[0].find(token), std::string::npos);
+    EXPECT_EQ(keys.size(), 2u); // the session and the user's list of sessions
+    EXPECT_TRUE(redis->exists("session:" + fingerprint(token)));
+    EXPECT_TRUE(redis->sismember("user:7:sessions", fingerprint(token)));
+    // The token itself is nowhere: not in a key, not in the list.
+    for(const std::string& key : keys)
+        EXPECT_EQ(key.find(token), std::string::npos);
+    EXPECT_FALSE(redis->sismember("user:7:sessions", token));
 }
 
 TEST_F(SessionStoreTest, ASessionExpiresAfter30Days)
@@ -49,6 +53,24 @@ TEST_F(SessionStoreTest, RemoveLogsOut)
     const std::string token = sessions.create("7");
     sessions.remove(token);
     EXPECT_FALSE(sessions.userIdFor(token));
+    EXPECT_FALSE(redis->exists("user:7:sessions"));
+}
+
+TEST_F(SessionStoreTest, RemoveAllExceptEndsTheOtherDevicesOfThatUserOnly)
+{
+    SessionStore sessions(*redis);
+    const std::string laptop = sessions.create("7");
+    const std::string phone = sessions.create("7");
+    const std::string tablet = sessions.create("7");
+    const std::string someoneElse = sessions.create("8");
+
+    sessions.removeAllExcept("7", laptop);
+
+    EXPECT_EQ(sessions.userIdFor(laptop).value(), "7");
+    EXPECT_FALSE(sessions.userIdFor(phone));
+    EXPECT_FALSE(sessions.userIdFor(tablet));
+    EXPECT_EQ(sessions.userIdFor(someoneElse).value(), "8");
+    EXPECT_EQ(redis->scard("user:7:sessions"), 1);
 }
 
 TEST_F(SessionStoreTest, UnknownOrMalformedTokensHaveNoUser)

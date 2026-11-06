@@ -16,6 +16,7 @@ namespace
         json["id"] = user.id;
         json["email"] = user.email;
         json["username"] = user.username;
+        json["createdAt"] = user.createdAt;
         return json;
     }
 
@@ -103,6 +104,35 @@ void addAuthRoutes(crow::SimpleApp& app, UserStore& users, SessionStore& session
             crow::response response = noContent();
             response.add_header("Set-Cookie", sessionCookie("", 0, config));
             return response;
+        });
+    });
+
+    CROW_ROUTE(app, "/api/auth/password")
+        .methods(crow::HTTPMethod::Post)
+        ([&users, &sessions, &limiter](const crow::request& request)
+    {
+        return handle([&]()
+        {
+            const std::string userId = requireUserId(request, sessions);
+            const crow::json::rvalue body = jsonObjectBody(request);
+
+            // Checked before the password, like the login: a locked account never runs Argon2.
+            limiter.check(rateLimits::passwordChangeFailuresPerUser, userId);
+            try
+            {
+                users.changePassword(userId, stringField(body, "currentPassword"), stringField(body, "newPassword"));
+            }
+            catch(const UnauthorizedError&)
+            {
+                limiter.hit(rateLimits::passwordChangeFailuresPerUser, userId);
+                // 400, not 401: the user is still logged in, only the typed password is wrong.
+                throw ValidationError("The current password is wrong.");
+            }
+            limiter.reset(rateLimits::passwordChangeFailuresPerUser, userId);
+
+            // Someone who knew the old password is logged out everywhere else; this device stays logged in.
+            sessions.removeAllExcept(userId, cookieValue(request, SESSION_COOKIE));
+            return noContent();
         });
     });
 
