@@ -1,5 +1,6 @@
-import { Navigate, Route, Routes } from 'react-router'
+import { Route, Routes } from 'react-router'
 import AppShell from './layout/AppShell.tsx'
+import OverviewPage from './pages/OverviewPage.tsx'
 import QuotesPage from './pages/QuotesPage.tsx'
 import StandardQuotesPage from './pages/StandardQuotesPage.tsx'
 import PresetPage from './pages/PresetPage.tsx'
@@ -21,7 +22,7 @@ export default function App() {
   return (
     <Routes>
       <Route element={<AppShell />}>
-        <Route index element={<Navigate to="/quotes" replace />} />
+        <Route index element={<OverviewPage />} />
         <Route path="quotes" element={<QuotesPage />} />
         <Route path="quotes/standard" element={<StandardQuotesPage />} />
         <Route path="quotes/:presetId" element={<PresetPage />} />

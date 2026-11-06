@@ -3,7 +3,15 @@ import Page from '../components/Page.tsx'
 import EventForm from '../components/EventForm.tsx'
 import LoginPrompt from '../components/LoginPrompt.tsx'
 import controls from '../components/Controls.module.css'
-import { createEvent, deleteEvent, getEvents, updateEvent, type EventInput } from '../api/events.ts'
+import {
+  ALL_DAY_NOTIFY_OPTIONS,
+  NOTIFY_OPTIONS,
+  createEvent,
+  deleteEvent,
+  getEvents,
+  updateEvent,
+  type EventInput,
+} from '../api/events.ts'
 import { useAuth } from '../context/authContext.ts'
 import type { CalendarEvent } from '../types/models.ts'
 import {
@@ -32,6 +40,15 @@ function timeLabel(event: CalendarEvent, dayKey: string): string {
   const from = startsToday ? timeOf(event.start) : '…'
   const to = endsToday ? timeOf(event.end) : '…'
   return `${from} – ${to}`
+}
+
+// "10 minutes before, 1 day before"
+function notifyLabel(event: CalendarEvent): string {
+  const options = event.allDay ? ALL_DAY_NOTIFY_OPTIONS : NOTIFY_OPTIONS
+  return options
+    .filter((option) => event.notify.includes(option.minutes))
+    .map((option) => option.label)
+    .join(', ')
 }
 
 export default function CalendarPage() {
@@ -247,6 +264,13 @@ function CalendarView() {
                 <span className={styles.eventBody}>
                   <span className={styles.eventTitle}>{event.title}</span>
                   {event.description && <span className={styles.eventDescription}>{event.description}</span>}
+                  {event.notify.length > 0 && (
+                    <span className={styles.eventDescription}>
+                      <span aria-hidden="true">🔔 </span>
+                      <span className={styles.srOnly}>Notifications: </span>
+                      {notifyLabel(event)}
+                    </span>
+                  )}
                 </span>
                 <button
                   type="button"

@@ -17,6 +17,11 @@ namespace
         json["end"] = event.end;
         json["allDay"] = event.allDay;
         json["description"] = event.description;
+        crow::json::wvalue::list notify;
+        for(const int minutes : event.notify)
+            notify.push_back(minutes);
+        json["notify"] = std::move(notify);
+        json["timezone"] = event.timezone;
         return json;
     }
 
@@ -29,6 +34,8 @@ namespace
         input.end = stringField(body, "end");
         input.allDay = boolField(body, "allDay");
         input.description = stringField(body, "description");
+        input.notify = optionalIntListField(body, "notify");
+        input.timezone = optionalStringField(body, "timezone").value_or("");
         return input;
     }
 

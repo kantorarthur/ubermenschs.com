@@ -99,8 +99,8 @@ If Redis cannot be reached, the Redis tests are skipped (not failed).
 | GET | `/api/settings` | | `{ activePreset }`: `"standard"` or a preset id |
 | PUT | `/api/settings/active-preset` | `{ presetId }` | 204 |
 | GET | `/api/events?from=YYYY-MM-DD&to=YYYY-MM-DD` | | the events touching those days (at most 400 days), by start |
-| POST | `/api/events` | `{ title, start, end, allDay, description }` | 201 + the new event |
-| PATCH | `/api/events/:id` | `{ title, start, end, allDay, description }` | the event (every field replaced) |
+| POST | `/api/events` | `{ title, start, end, allDay, description, notify, timezone }` | 201 + the new event |
+| PATCH | `/api/events/:id` | the same fields | the event (every field replaced) |
 | DELETE | `/api/events/:id` | | 204 |
 | GET | `/api/reminders` | | the user's reminders, by time of day |
 | POST | `/api/reminders` | `{ time, message, timezone }` | 201 + the new reminder (on) |
@@ -120,6 +120,12 @@ Calendar and reminders:
 - `start` and `end` are local times like `2026-11-06T14:30`; an all-day event goes from `T00:00` to `T23:59`.
 - `time` is `HH:MM`; `timezone` is a name from the time zone database (`Europe/Bucharest`), checked with
   `std::chrono::locate_zone` (the Docker images install `tzdata` for it).
+- `notify` lists when an event sends a notification, in minutes before the start: any of `0`, `10`, `30`, `60`,
+  `1440` (several allowed). For all-day events they count from 09:00 on the first day. `timezone` is the
+  browser's time zone; it is needed when `notify` is not empty.
+- `events:due` (sorted set) holds the event notifications still to send, member `{eventId}:{minutes}`, scored by
+  the moment; the scheduler takes each one out with `ZREM` (so only one server sends it) and sends it.
+  Moments already past when the event is saved are not planned.
 - A user can have up to 2000 events and 20 reminders.
 - Redis keys: `event:{id}` (hash) and `user:{id}:events` (sorted set, the score is the start as a number);
   `reminder:{id}` (hash) and `user:{id}:reminders` (set).

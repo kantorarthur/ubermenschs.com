@@ -1,3 +1,4 @@
+#include "event_store.hpp"
 #include "push_store.hpp"
 #include "redis_fixture.hpp"
 #include "reminder_scheduler.hpp"
@@ -262,4 +263,68 @@ TEST_F(ReminderSchedulerTest, TheStoreSchedulesEveryChange)
 
     reminders->remove(ANA, r.id);
     EXPECT_EQ(dueScore(r.id), -1);
+}
+
+TEST_F(ReminderSchedulerTest, EventNotificationsAreSentOnceWithTheirText)
+{
+    subscribe(ANA, "https://fcm.googleapis.com/fcm/send/phone");
+    subscribe(BOB, "https://fcm.googleapis.com/fcm/send/bob");
+    EventStore events(*redis, [this]()
+    {
+        return now;
+    });
+    // 07:30 Bucharest = MORNING + 30 min; notifications at the start and 10 minutes before.
+    EventInput exam{"Exam", "2026-11-06T07:30", "2026-11-06T09:00", false, "", {}, ""};
+    exam.notify = {0, 10};
+    exam.timezone = "Europe/Bucharest";
+    const CalendarEvent e = events.create(ANA, exam);
+
+    EXPECT_EQ(scheduler->sendDueEvents(MORNING + 19min), 0);
+    EXPECT_EQ(scheduler->sendDueEvents(MORNING + 20min), 1);
+    ASSERT_EQ(sender.sent.size(), 1u);
+    crow::json::rvalue payload = crow::json::load(sender.sent[0].payload);
+    EXPECT_EQ(std::string(payload["title"].s()), "Exam");
+    EXPECT_EQ(std::string(payload["body"].s()), "Starts in 10 minutes, at 07:30");
+    EXPECT_EQ(std::string(payload["tag"].s()), "event-" + e.id + "-10");
+    EXPECT_EQ(std::string(payload["url"].s()), "/calendar");
+    EXPECT_EQ(sender.sent[0].endpoint.find("bob"), std::string::npos);
+
+    // Not again in the next round.
+    EXPECT_EQ(scheduler->sendDueEvents(MORNING + 21min), 0);
+
+    EXPECT_EQ(scheduler->sendDueEvents(MORNING + 30min), 1);
+    payload = crow::json::load(sender.sent[1].payload);
+    EXPECT_EQ(std::string(payload["body"].s()), "Starts now (07:30)");
+    EXPECT_EQ(redis->zcard(DUE_EVENTS_KEY), 0);
+}
+
+TEST_F(ReminderSchedulerTest, LateOrDeletedEventNotificationsAreDropped)
+{
+    subscribe(ANA, "https://fcm.googleapis.com/fcm/send/phone");
+    EventStore events(*redis, [this]()
+    {
+        return now;
+    });
+    EventInput late{"Late", "2026-11-06T07:30", "2026-11-06T08:00", false, "", {}, ""};
+    late.notify = {0};
+    late.timezone = "Europe/Bucharest";
+    events.create(ANA, late);
+
+    EventInput gone = late;
+    gone.title = "Gone";
+    const CalendarEvent g = events.create(ANA, gone);
+    redis->del("event:" + g.id); // as if deleted without reaching events:due
+
+    // The server was down from 07:25 to 08:00.
+    EXPECT_EQ(scheduler->sendDueEvents(MORNING + 1h), 0);
+    EXPECT_TRUE(sender.sent.empty());
+    EXPECT_EQ(redis->zcard(DUE_EVENTS_KEY), 0);
+}
+
+TEST(EventNotificationText, AllDayAndOneDayBefore)
+{
+    // Checked through the scheduler's public result above for timed events; here the all-day wording.
+    EventInput holiday{"Holiday", "2026-11-08T00:00", "2026-11-08T23:59", true, "", {}, ""};
+    holiday.timezone = "Europe/Bucharest";
+    EXPECT_EQ(notificationTime(holiday, 1440), notificationTime(holiday, 0) - std::chrono::hours(24));
 }

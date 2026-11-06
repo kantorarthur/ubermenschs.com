@@ -2,6 +2,7 @@
 #include "event_store.hpp"
 #include "redis_fixture.hpp"
 
+#include <chrono>
 #include <iterator>
 #include <string>
 #include <vector>
@@ -13,7 +14,7 @@ namespace
 
     EventInput event(const std::string& title, const std::string& start, const std::string& end)
     {
-        return EventInput{title, start, end, false, ""};
+        return EventInput{title, start, end, false, "", {}, ""};
     }
 
     std::vector<std::string> titles(const std::vector<CalendarEvent>& events)
@@ -34,8 +35,8 @@ TEST_F(EventStoreTest, CreateAndListSortedByStart)
     EventStore store(*redis);
     store.create(ANA, event("Lunch", "2026-11-06T13:00", "2026-11-06T14:00"));
     const CalendarEvent run = store.create(ANA, EventInput{"  Run  ", "2026-11-06T07:00", "2026-11-06T08:00",
-                                                           false, "  5 km  "});
-    store.create(ANA, EventInput{"Holiday", "2026-11-05T00:00", "2026-11-05T23:59", true, ""});
+                                                           false, "  5 km  ", {}, ""});
+    store.create(ANA, EventInput{"Holiday", "2026-11-05T00:00", "2026-11-05T23:59", true, "", {}, ""});
 
     EXPECT_EQ(run.title, "Run");
     EXPECT_EQ(run.description, "5 km");
@@ -74,7 +75,7 @@ TEST_F(EventStoreTest, EventRules)
     EXPECT_THROW(store.create(ANA, event("Bad date", "2026-02-30T10:00", "2026-03-01T10:00")), ValidationError);
     EXPECT_THROW(store.create(ANA, event("Bad format", "2026-11-06 10:00", "2026-11-06T11:00")), ValidationError);
     EXPECT_THROW(store.create(ANA, EventInput{"Long", "2026-11-06T10:00", "2026-11-06T11:00", false,
-                                              std::string(501, 'x')}), ValidationError);
+                                              std::string(501, 'x'), {}, ""}), ValidationError);
 
     EXPECT_NO_THROW(store.create(ANA, event(std::string(100, 'x'), "2026-11-06T10:00", "2026-11-06T10:00")));
     // Nothing was saved by the refused ones.
@@ -98,7 +99,7 @@ TEST_F(EventStoreTest, UpdateReplacesTheEventAndItsPlace)
     store.create(ANA, event("Second", "2026-11-06T12:00", "2026-11-06T13:00"));
 
     const CalendarEvent moved = store.update(ANA, first.id,
-        EventInput{"Moved", "2026-11-06T15:00", "2026-11-06T16:00", false, "later"});
+        EventInput{"Moved", "2026-11-06T15:00", "2026-11-06T16:00", false, "later", {}, ""});
     EXPECT_EQ(moved.id, first.id);
     EXPECT_EQ(moved.title, "Moved");
 
@@ -155,4 +156,124 @@ TEST_F(EventStoreTest, AUserHasAtMostTheLimitOfEvents)
 
     EXPECT_THROW(store.create(ANA, event("One too many", "2026-11-06T09:00", "2026-11-06T10:00")), ValidationError);
     EXPECT_NO_THROW(store.create(BOB, event("Bob's first", "2026-11-06T09:00", "2026-11-06T10:00")));
+}
+
+namespace
+{
+    using namespace std::chrono;
+
+    // 6 November 2026, 10:00 in Bucharest (08:00 UTC).
+    const sys_seconds TEN_IN_BUCHAREST = sys_days{2026y / 11 / 6} + 8h;
+
+    EventInput withNotifications(const std::string& title, const std::string& start, std::vector<int> notify)
+    {
+        EventInput input{title, start, start, false, "", {}, ""};
+        input.notify = std::move(notify);
+        input.timezone = "Europe/Bucharest";
+        return input;
+    }
+
+    double scoreOf(sys_seconds moment)
+    {
+        return static_cast<double>(moment.time_since_epoch().count());
+    }
+
+    class EventNotificationsTest : public RedisTest
+    {
+    protected:
+        double dueScore(const std::string& member)
+        {
+            const auto score = redis->zscore(DUE_EVENTS_KEY, member);
+            return score ? *score : -1;
+        }
+    };
+}
+
+TEST_F(EventNotificationsTest, TheChoicesAreSavedAndPlanned)
+{
+    EventStore store(*redis, []()
+    {
+        return TEN_IN_BUCHAREST;
+    });
+    // Tomorrow at 14:30 Bucharest time = 12:30 UTC.
+    const CalendarEvent e = store.create(ANA, withNotifications("Exam", "2026-11-07T14:30", {1440, 10, 10, 0}));
+
+    EXPECT_EQ(e.notify, (std::vector<int>{0, 10, 1440})); // sorted, each once
+    EXPECT_EQ(e.timezone, "Europe/Bucharest");
+    const sys_seconds start = sys_days{2026y / 11 / 7} + 12h + 30min;
+    EXPECT_EQ(dueScore(e.id + ":0"), scoreOf(start));
+    EXPECT_EQ(dueScore(e.id + ":10"), scoreOf(start - 10min));
+    EXPECT_EQ(dueScore(e.id + ":1440"), scoreOf(start - 24h));
+
+    const CalendarEvent listed = store.list(ANA, "2026-11-07", "2026-11-07")[0];
+    EXPECT_EQ(listed.notify, (std::vector<int>{0, 10, 1440}));
+    EXPECT_EQ(listed.timezone, "Europe/Bucharest");
+}
+
+TEST_F(EventNotificationsTest, MomentsAlreadyPastAreNotPlanned)
+{
+    EventStore store(*redis, []()
+    {
+        return TEN_IN_BUCHAREST;
+    });
+    // Today at 10:05: "at the start" is still ahead, "10 minutes before" (09:55) and "1 day before" are past.
+    const CalendarEvent e = store.create(ANA, withNotifications("Soon", "2026-11-06T10:05", {0, 10, 1440}));
+    EXPECT_GT(dueScore(e.id + ":0"), 0);
+    EXPECT_EQ(dueScore(e.id + ":10"), -1);
+    EXPECT_EQ(dueScore(e.id + ":1440"), -1);
+}
+
+TEST_F(EventNotificationsTest, AllDayEventsCountFromNineInTheMorning)
+{
+    EventStore store(*redis, []()
+    {
+        return TEN_IN_BUCHAREST;
+    });
+    EventInput holiday{"Holiday", "2026-11-08T00:00", "2026-11-08T23:59", true, "", {}, ""};
+    holiday.notify = {0, 1440};
+    holiday.timezone = "Europe/Bucharest";
+    const CalendarEvent e = store.create(ANA, holiday);
+
+    const sys_seconds nine = sys_days{2026y / 11 / 8} + 7h; // 09:00 Bucharest
+    EXPECT_EQ(dueScore(e.id + ":0"), scoreOf(nine));
+    EXPECT_EQ(dueScore(e.id + ":1440"), scoreOf(nine - 24h));
+}
+
+TEST_F(EventNotificationsTest, UpdateAndDeletePlanAgain)
+{
+    EventStore store(*redis, []()
+    {
+        return TEN_IN_BUCHAREST;
+    });
+    const CalendarEvent e = store.create(ANA, withNotifications("Exam", "2026-11-07T14:30", {10, 1440}));
+
+    // Moved one hour later, and only "at the start".
+    store.update(ANA, e.id, withNotifications("Exam", "2026-11-07T15:30", {0}));
+    EXPECT_EQ(dueScore(e.id + ":10"), -1);
+    EXPECT_EQ(dueScore(e.id + ":1440"), -1);
+    EXPECT_EQ(dueScore(e.id + ":0"), scoreOf(sys_days{2026y / 11 / 7} + 13h + 30min));
+
+    // No notifications any more.
+    store.update(ANA, e.id, EventInput{"Exam", "2026-11-07T15:30", "2026-11-07T15:30", false, "", {}, ""});
+    EXPECT_EQ(redis->zcard(DUE_EVENTS_KEY), 0);
+
+    store.update(ANA, e.id, withNotifications("Exam", "2026-11-07T15:30", {0, 60}));
+    store.remove(ANA, e.id);
+    EXPECT_EQ(redis->zcard(DUE_EVENTS_KEY), 0);
+}
+
+TEST_F(EventNotificationsTest, BadChoicesAreRefused)
+{
+    EventStore store(*redis);
+    EXPECT_THROW(store.create(ANA, withNotifications("x", "2026-11-07T14:30", {5})), ValidationError);
+    EXPECT_THROW(store.create(ANA, withNotifications("x", "2026-11-07T14:30", {-10})), ValidationError);
+
+    EventInput noZone = withNotifications("x", "2026-11-07T14:30", {10});
+    noZone.timezone = "";
+    EXPECT_THROW(store.create(ANA, noZone), ValidationError);
+    noZone.timezone = "Mars/Base";
+    EXPECT_THROW(store.create(ANA, noZone), ValidationError);
+
+    EXPECT_TRUE(store.list(ANA, "2026-11-01", "2026-11-30").empty());
+    EXPECT_EQ(redis->zcard(DUE_EVENTS_KEY), 0);
 }

@@ -82,7 +82,7 @@ function AccountMenu({ username }: { username: string }) {
     try {
       await logout()
       setIsOpen(false)
-      navigate('/quotes')
+      navigate('/')
     } finally {
       setIsLoggingOut(false)
     }

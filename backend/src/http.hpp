@@ -4,6 +4,7 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 
 // A response whose body is the given JSON.
 crow::response jsonResponse(int status, const crow::json::wvalue& body);
@@ -27,6 +28,10 @@ bool boolField(const crow::json::rvalue& body, const std::string& name);
 // ValidationError if it is there with the wrong type.
 std::optional<std::string> optionalStringField(const crow::json::rvalue& body, const std::string& name);
 std::optional<bool> optionalBoolField(const crow::json::rvalue& body, const std::string& name);
+
+// A list of whole numbers, e.g. "notify": [10, 1440]; empty if the field is missing.
+// Throws ValidationError if it is not a list of whole numbers.
+std::vector<int> optionalIntListField(const crow::json::rvalue& body, const std::string& name);
 
 // The IP address of the visitor. Behind a proxy (Render), every request comes from the proxy,
 // so with trustProxy the address is the last one in the X-Forwarded-For header (the one the proxy added).

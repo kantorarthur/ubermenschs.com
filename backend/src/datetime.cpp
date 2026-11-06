@@ -127,3 +127,13 @@ std::chrono::sys_seconds nextReminderTime(const std::string& time, const std::st
     }
     throw std::runtime_error("no next reminder time found");
 }
+
+std::chrono::sys_seconds localToUtc(const std::string& localDateTime, const std::string& timezone)
+{
+    using namespace std::chrono;
+
+    const time_zone* zone = locate_zone(timezone);
+    const local_seconds local = local_days{toDays(localDateTime.substr(0, 10)).time_since_epoch()}
+                              + hours(number(localDateTime, 11, 2)) + minutes(number(localDateTime, 14, 2));
+    return zone->to_sys(local, choose::earliest);
+}

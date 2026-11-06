@@ -122,16 +122,18 @@ int main(int argc, char** argv)
     addReminderRoutes(app, reminders, sessions);
     addPushRoutes(app, pushSubscriptions, *vapidKeys, scheduler, sessions, limiter);
 
-    // Sends the reminders that are due, every 15 seconds, until the server stops.
+    // Sends the reminders and calendar notifications that are due, every 15 seconds, until the server stops.
     std::jthread reminderThread([&scheduler](std::stop_token stop)
     {
         while(!stop.stop_requested())
         {
             try
             {
-                const int sent = scheduler.sendDue(ReminderStore::systemClock());
-                if(sent > 0)
-                    CROW_LOG_INFO << "Sent " << sent << " reminder notification(s)";
+                const auto now = ReminderStore::systemClock();
+                const int reminders = scheduler.sendDue(now);
+                const int events = scheduler.sendDueEvents(now);
+                if(reminders + events > 0)
+                    CROW_LOG_INFO << "Sent " << reminders << " reminder and " << events << " event notification(s)";
             }
             catch(const std::exception& error)
             {

@@ -6,6 +6,8 @@ interface MenuItem {
   to: string
   label: string
   icon: ReactNode
+  // Highlighted only on exactly this URL (for "/", which every URL starts with).
+  end?: boolean
 }
 
 // Simple line icons, drawn with the current text color.
@@ -22,6 +24,17 @@ const iconProps = {
 }
 
 const menu: MenuItem[] = [
+  {
+    to: '/',
+    label: 'Overview',
+    end: true,
+    icon: (
+      <svg {...iconProps}>
+        <path d="M4 11l8-7 8 7" />
+        <path d="M6 9.5V20h12V9.5" />
+      </svg>
+    ),
+  },
   {
     to: '/quotes',
     label: 'Set quotes',
@@ -92,6 +105,7 @@ export default function Sidebar() {
             {/* NavLink knows when its URL is the current one, so it can be highlighted. */}
             <NavLink
               to={item.to}
+              end={item.end}
               className={({ isActive }) => (isActive ? `${styles.link} ${styles.active}` : styles.link)}
             >
               {item.icon}

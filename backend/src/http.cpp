@@ -64,6 +64,24 @@ std::optional<bool> optionalBoolField(const crow::json::rvalue& body, const std:
     return type == crow::json::type::True;
 }
 
+std::vector<int> optionalIntListField(const crow::json::rvalue& body, const std::string& name)
+{
+    std::vector<int> values;
+    if(!body.has(name))
+        return values;
+
+    const crow::json::rvalue& list = body[name];
+    if(list.t() != crow::json::type::List)
+        throw ValidationError("The field \"" + name + "\" must be a list of numbers.");
+    for(const crow::json::rvalue& item : list)
+    {
+        if(item.t() != crow::json::type::Number || item.nt() == crow::json::num_type::Floating_point)
+            throw ValidationError("The field \"" + name + "\" must be a list of whole numbers.");
+        values.push_back(static_cast<int>(item.i()));
+    }
+    return values;
+}
+
 std::string cookieValue(const crow::request& request, const std::string& name)
 {
     // The browser sends all cookies in one header: "Cookie: a=1; session=abc; b=2".

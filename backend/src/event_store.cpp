@@ -5,7 +5,9 @@
 #include "redis_client.hpp"
 #include "text.hpp"
 
+#include <algorithm>
 #include <iterator>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -43,7 +45,56 @@ namespace
         if(input.end < input.start)
             throw ValidationError("The event cannot end before it starts.");
 
+        // Notifications: only the offered choices, each once, in order.
+        for(const int minutes : input.notify)
+        {
+            if(std::find(NOTIFY_OPTIONS.begin(), NOTIFY_OPTIONS.end(), minutes) == NOTIFY_OPTIONS.end())
+                throw ValidationError("Unknown notification time: " + std::to_string(minutes) + " minutes before.");
+        }
+        std::sort(cleaned.notify.begin(), cleaned.notify.end());
+        cleaned.notify.erase(std::unique(cleaned.notify.begin(), cleaned.notify.end()), cleaned.notify.end());
+
+        if(!cleaned.timezone.empty() && !isTimeZone(cleaned.timezone))
+            throw ValidationError("Unknown time zone: " + cleaned.timezone.substr(0, 64));
+        if(!cleaned.notify.empty() && cleaned.timezone.empty())
+            throw ValidationError("Notifications need the time zone of the event.");
+
         return cleaned;
+    }
+
+    // {0, 10, 1440} → "0,10,1440" and back.
+    std::string joinNumbers(const std::vector<int>& numbers)
+    {
+        std::string text;
+        for(const int n : numbers)
+        {
+            if(!text.empty())
+                text += ',';
+            text += std::to_string(n);
+        }
+        return text;
+    }
+
+    std::vector<int> splitNumbers(const std::string& text)
+    {
+        std::vector<int> numbers;
+        std::stringstream stream(text);
+        std::string item;
+        while(std::getline(stream, item, ','))
+        {
+            if(!item.empty())
+                numbers.push_back(std::stoi(item));
+        }
+        return numbers;
+    }
+
+    // Every member events:due can have for an event, to remove them all at once.
+    std::vector<std::string> allDueMembers(const std::string& eventId)
+    {
+        std::vector<std::string> members;
+        for(const int minutes : NOTIFY_OPTIONS)
+            members.push_back(eventId + ":" + std::to_string(minutes));
+        return members;
     }
 
     // The hash fields of an event, in the form HSET takes them.
@@ -56,20 +107,52 @@ namespace
             {"end", event.end},
             {"allDay", event.allDay ? "1" : "0"},
             {"description", event.description},
+            {"notify", joinNumbers(event.notify)},
+            {"timezone", event.timezone},
         };
     }
 
     CalendarEvent toEvent(const std::string& eventId, const EventInput& input)
     {
-        return CalendarEvent{eventId, input.title, input.start, input.end, input.allDay, input.description};
+        return CalendarEvent{eventId, input.title, input.start, input.end, input.allDay, input.description,
+                             input.notify, input.timezone};
     }
 
     const std::string notFoundMessage = "This event does not exist.";
 }
 
-EventStore::EventStore(sw::redis::Redis& redis)
-    : redis_(redis)
+std::chrono::sys_seconds notificationTime(const EventInput& event, int minutesBefore)
 {
+    const std::string base = event.allDay ? event.start.substr(0, 10) + "T" + ALL_DAY_NOTIFY_TIME : event.start;
+    return localToUtc(base, event.timezone) - std::chrono::minutes(minutesBefore);
+}
+
+EventStore::EventStore(sw::redis::Redis& redis, Clock clock)
+    : redis_(redis), clock_(std::move(clock))
+{
+}
+
+std::chrono::sys_seconds EventStore::systemClock()
+{
+    return std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now());
+}
+
+std::vector<std::pair<std::string, double>> EventStore::dueNotifications(const std::string& eventId,
+                                                                         const EventInput& event)
+{
+    std::vector<std::pair<std::string, double>> due;
+    const auto now = clock_();
+    for(const int minutes : event.notify)
+    {
+        const auto moment = notificationTime(event, minutes);
+        // Moments already past are not sent (e.g. "1 day before" for an event tomorrow morning at 08:00).
+        if(moment > now)
+        {
+            due.emplace_back(eventId + ":" + std::to_string(minutes),
+                             static_cast<double>(moment.time_since_epoch().count()));
+        }
+    }
+    return due;
 }
 
 bool EventStore::owns(const std::string& userId, const std::string& eventId)
@@ -117,7 +200,8 @@ std::vector<CalendarEvent> EventStore::list(const std::string& userId, const std
             continue;
 
         events.push_back(CalendarEvent{ids[i], fields["title"], fields["start"], fields["end"],
-                                       fields["allDay"] == "1", fields["description"]});
+                                       fields["allDay"] == "1", fields["description"],
+                                       splitNumbers(fields["notify"]), fields["timezone"]});
     }
     return events;
 }
@@ -130,11 +214,14 @@ CalendarEvent EventStore::create(const std::string& userId, const EventInput& in
 
     const std::string eventId = std::to_string(redis_.incr("next:event:id"));
     const auto fields = fieldsOf(userId, event);
+    const auto due = dueNotifications(eventId, event);
 
-    // The event and its place in the user's calendar are written together or not at all.
+    // The event, its place in the user's calendar and its notifications are written together or not at all.
     auto transaction = redis_.transaction();
     transaction.hset(eventKey(eventId), fields.begin(), fields.end())
                .zadd(userEventsKey(userId), eventId, static_cast<double>(dateTimeNumber(event.start)));
+    if(!due.empty())
+        transaction.zadd(DUE_EVENTS_KEY, due.begin(), due.end());
     transaction.exec();
     waitForReplica(transaction.redis());
 
@@ -148,11 +235,17 @@ CalendarEvent EventStore::update(const std::string& userId, const std::string& e
         throw NotFoundError(notFoundMessage);
 
     const auto fields = fieldsOf(userId, event);
+    const auto due = dueNotifications(eventId, event);
+    const auto oldDue = allDueMembers(eventId);
 
-    // The start may have changed, so the score in the sorted set changes with it.
+    // The start may have changed, so the score in the sorted set changes with it,
+    // and the notifications are planned again from scratch.
     auto transaction = redis_.transaction();
     transaction.hset(eventKey(eventId), fields.begin(), fields.end())
-               .zadd(userEventsKey(userId), eventId, static_cast<double>(dateTimeNumber(event.start)));
+               .zadd(userEventsKey(userId), eventId, static_cast<double>(dateTimeNumber(event.start)))
+               .zrem(DUE_EVENTS_KEY, oldDue.begin(), oldDue.end());
+    if(!due.empty())
+        transaction.zadd(DUE_EVENTS_KEY, due.begin(), due.end());
     transaction.exec();
     waitForReplica(transaction.redis());
 
@@ -164,8 +257,10 @@ void EventStore::remove(const std::string& userId, const std::string& eventId)
     if(!owns(userId, eventId))
         throw NotFoundError(notFoundMessage);
 
+    const auto oldDue = allDueMembers(eventId);
     auto transaction = redis_.transaction();
     transaction.del(eventKey(eventId))
-               .zrem(userEventsKey(userId), eventId);
+               .zrem(userEventsKey(userId), eventId)
+               .zrem(DUE_EVENTS_KEY, oldDue.begin(), oldDue.end());
     transaction.exec();
 }

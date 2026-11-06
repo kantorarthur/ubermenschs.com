@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createEvent, deleteEvent, getEvents, updateEvent } from './events.ts'
+import { browserTimeZone } from './reminders.ts'
 
 function answer(status: number, body: unknown) {
   const fetchMock = vi.fn((_url: string, _init?: RequestInit) =>
@@ -19,6 +20,7 @@ const seminar = {
   end: '2026-11-06T12:00',
   allDay: false,
   description: '',
+  notify: [10, 1440],
 }
 
 describe('events API', () => {
@@ -28,13 +30,12 @@ describe('events API', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('/api/events?from=2026-10-26&to=2026-12-06')
   })
 
-  it('sends a new event as JSON', async () => {
-    const fetchMock = answer(201, { id: '1', ...seminar })
-    await expect(createEvent(seminar)).resolves.toEqual({ id: '1', ...seminar })
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/events',
-      expect.objectContaining({ method: 'POST', body: JSON.stringify(seminar) }),
-    )
+  it("sends a new event as JSON, with the browser's time zone for its notifications", async () => {
+    const fetchMock = answer(201, { id: '1', ...seminar, timezone: 'Europe/Bucharest' })
+    await expect(createEvent(seminar)).resolves.toEqual({ id: '1', ...seminar, timezone: 'Europe/Bucharest' })
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/events')
+    expect(fetchMock.mock.calls[0][1]?.method).toBe('POST')
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ ...seminar, timezone: browserTimeZone() })
   })
 
   it('updates and deletes by id', async () => {
