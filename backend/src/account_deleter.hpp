@@ -4,6 +4,7 @@
 #include "preset_store.hpp"
 #include "push_store.hpp"
 #include "reminder_store.hpp"
+#include "study_store.hpp"
 #include "user_store.hpp"
 
 #include <string>
@@ -15,6 +16,7 @@
 //   calendar        event:{id}, user:{id}:events, its members of events:due
 //   reminders       reminder:{id}, user:{id}:reminders, its members of reminders:due
 //   notifications   push:sub:{id}, user:{id}:push
+//   study plan      user:{id}:study
 //   the account     user:{id}, user:by-email:{email}
 //
 // The sessions go first, so the account cannot add anything new while the rest is being deleted, and
@@ -24,7 +26,7 @@ class AccountDeleter
 {
 public:
     AccountDeleter(UserStore& users, SessionStore& sessions, PresetStore& presets, EventStore& events,
-                   ReminderStore& reminders, PushStore& pushSubscriptions);
+                   ReminderStore& reminders, PushStore& pushSubscriptions, StudyStore& study);
 
     void deleteAccount(const std::string& userId);
 
@@ -35,4 +37,5 @@ private:
     EventStore& events_;
     ReminderStore& reminders_;
     PushStore& pushSubscriptions_;
+    StudyStore& study_;
 };

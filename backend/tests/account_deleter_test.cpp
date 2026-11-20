@@ -6,6 +6,7 @@
 #include "push_store.hpp"
 #include "redis_fixture.hpp"
 #include "reminder_store.hpp"
+#include "study_store.hpp"
 #include "user_store.hpp"
 #include "webpush_crypto.hpp"
 
@@ -42,11 +43,13 @@ namespace
             events = std::make_unique<EventStore>(*redis, fixedNow);
             reminders = std::make_unique<ReminderStore>(*redis, fixedNow);
             push = std::make_unique<PushStore>(*redis, DEFAULT_PUSH_HOSTS);
-            deleter = std::make_unique<AccountDeleter>(*users, *sessions, *presets, *events, *reminders, *push);
+            study = std::make_unique<StudyStore>(*redis);
+            deleter = std::make_unique<AccountDeleter>(*users, *sessions, *presets, *events, *reminders, *push,
+                                                       *study);
         }
 
         // An account with some of everything: two logins, a quote set in use, an event with
-        // notifications, a reminder and a browser for notifications.
+        // notifications, a reminder, a browser for notifications and a book read.
         User fullAccount(const std::string& email, const std::string& endpoint)
         {
             const User user = users->registerUser(email, "Someone", PASSWORD);
@@ -65,6 +68,7 @@ namespace
 
             reminders->create(user.id, "07:00", "Read 20 pages.", BUCHAREST);
             push->save(user.id, endpoint, base64UrlEncode(generateP256KeyPair().publicKey), AUTH);
+            study->setRead(user.id, "meditations", true);
             return user;
         }
 
@@ -88,6 +92,7 @@ namespace
         std::unique_ptr<EventStore> events;
         std::unique_ptr<ReminderStore> reminders;
         std::unique_ptr<PushStore> push;
+        std::unique_ptr<StudyStore> study;
         std::unique_ptr<AccountDeleter> deleter;
     };
 }
@@ -118,6 +123,7 @@ TEST_F(AccountDeleterTest, DeletesEverythingOfTheUserAndNothingElse)
     EXPECT_EQ(presets->list(bob.id)[0].quotes.size(), 2u);
     EXPECT_EQ(reminders->list(bob.id).size(), 1u);
     EXPECT_EQ(push->list(bob.id).size(), 1u);
+    EXPECT_EQ(study->readBooks(bob.id), std::vector<std::string>{"meditations"});
 }
 
 TEST_F(AccountDeleterTest, EveryLoginEnds)

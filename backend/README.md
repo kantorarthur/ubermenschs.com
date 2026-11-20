@@ -55,6 +55,8 @@ and is never touched (the tests refuse to run on database 0).
 | `tests/webpush_crypto_test.cpp` | base64url, P-256 keys, the encryption against the example in RFC 8291 (byte for byte), VAPID signatures |
 | `tests/push_store_test.cpp` | which push services are accepted, saving and removing browsers, the 10 limit |
 | `tests/reminder_scheduler_test.cpp` | due reminders go to every browser of their user once, late ones are skipped, unsubscribed browsers are forgotten, several servers at once |
+| `tests/study_store_test.cpp` | books marked as read and not read, every user apart, which ids are accepted, the 100 limit |
+| `tests/account_deleter_test.cpp` | deleting an account removes every key of the user and nothing of anyone else; the email can be used again |
 
 If Redis cannot be reached, the Redis tests are skipped (not failed).
 
@@ -107,6 +109,8 @@ If Redis cannot be reached, the Redis tests are skipped (not failed).
 | POST | `/api/reminders` | `{ time, message, timezone }` | 201 + the new reminder (on) |
 | PATCH | `/api/reminders/:id` | any of `{ time, message, enabled, timezone }` | the reminder |
 | DELETE | `/api/reminders/:id` | | 204 |
+| GET | `/api/study` | | `{ read: [...] }`: the ids of the study plan books marked as read |
+| PUT | `/api/study/books/:bookId` | `{ read }` | the same answer as `GET /api/study`, after the change |
 | GET | `/api/push/public-key` | | `{ publicKey }`: the VAPID key browsers need to subscribe |
 | POST | `/api/push/subscriptions` | `{ endpoint, keys: { p256dh, auth } }` (the browser's `PushSubscription.toJSON()`) | 201 `{ id }` |
 | POST | `/api/push/unsubscribe` | `{ endpoint }` | 204 |
@@ -115,7 +119,7 @@ If Redis cannot be reached, the Redis tests are skipped (not failed).
 Errors come back as `{"error": "..."}` with 400 (bad data), 401 (not logged in), 404 (not found),
 409 (email already used), 429 (too many attempts, with a `Retry-After` header in seconds) or 503 (Redis down).
 
-The preset, event, reminder and push routes (except the public key) need a logged-in user; `GET /api/settings` answers `"standard"` for visitors.
+The preset, event, reminder, study and push routes (except the public key) need a logged-in user; `GET /api/settings` answers `"standard"` for visitors.
 
 Calendar and reminders:
 - `start` and `end` are local times like `2026-11-06T14:30`; an all-day event goes from `T00:00` to `T23:59`.
@@ -130,6 +134,11 @@ Calendar and reminders:
 - A user can have up to 2000 events and 20 reminders.
 - Redis keys: `event:{id}` (hash) and `user:{id}:events` (sorted set, the score is the start as a number);
   `reminder:{id}` (hash) and `user:{id}:reminders` (set).
+
+Study plan:
+- The plan itself (stages, books, their order) is in the frontend, `src/data/studyPlan.ts`. The backend keeps only
+  which books a user marked as read: `user:{id}:study` (set of book ids, at most 100). A book id is 1-60
+  characters of `a-z`, `0-9` and `-`.
 
 Push notifications (Web Push, the standard every big browser supports):
 - A browser that turns notifications on gets an address (the endpoint) from its push service (Google for Chrome,
@@ -178,6 +187,9 @@ src/
   event_routes.*       the HTTP routes for events
   reminder_store.*     daily reminders in Redis
   reminder_routes.*    the HTTP routes for reminders
+  study_store.*        the study plan books a user read, in Redis
+  study_routes.*       the HTTP routes for the study plan
+  account_deleter.*    deletes an account and everything that belongs to it
   datetime.*           checks for dates, times and time zones; the next moment a reminder goes off
   push_store.*         the browsers that get a user's notifications, and which push services are allowed
   push_sender.*        sends one notification (libcurl); the VAPID keys

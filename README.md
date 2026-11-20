@@ -38,6 +38,9 @@ Once the connection was open, the first byte of the response arrived in 60 ms at
 - **Daily reminders**: several per user, each at a fixed time in the user's time zone (summer and winter time
   included), sent as push notifications to every device where they are turned on.
 - **Overview**: the main page with today's events and reminders and the way to every section.
+- **Philosophical study plan**: 15 books in five stages, from Marcus Aurelius to Nietzsche's Zarathustra; the
+  user ticks what they read, sees what comes next with a question to think about, and can add a daily reading
+  reminder.
 - **Install as an app** ("Download application"): the browser's install window, or the steps for Safari and Firefox.
 - **Privacy**: a `/privacy` page (what is kept, where, for how long, the user's rights) and a cookie notice: the only
   cookie is the login cookie, so logging in and registering wait for "Accept"; no analytics, ads or trackers.

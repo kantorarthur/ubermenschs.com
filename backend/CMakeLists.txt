@@ -50,6 +50,8 @@ add_library(core STATIC
     src/reminder_routes.cpp
     src/reminder_scheduler.cpp
     src/reminder_store.cpp
+    src/study_routes.cpp
+    src/study_store.cpp
     src/text.cpp
     src/user_store.cpp
     src/web_app.cpp
@@ -82,6 +84,7 @@ if(BUILD_TESTS)
         tests/reminder_scheduler_test.cpp
         tests/reminder_store_test.cpp
         tests/session_store_test.cpp
+        tests/study_store_test.cpp
         tests/text_test.cpp
         tests/user_store_test.cpp
         tests/webpush_crypto_test.cpp

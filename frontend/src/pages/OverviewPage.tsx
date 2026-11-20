@@ -19,7 +19,7 @@ const SECTIONS = [
   },
   { to: '/calendar', title: 'Calendar', text: 'Your events, with a notification before they start.' },
   { to: '/reminders', title: 'Reminder', text: 'Daily messages at the time you choose, on your phone and computer.' },
-  { to: '/study-plan', title: 'Philosophical study plan', text: 'What to read and in which order. Coming soon.' },
+  { to: '/study-plan', title: 'Philosophical study plan', text: 'What to read and in which order, from the Stoics to Nietzsche.' },
 ]
 
 // "/" — the main page: what the site is, today for a logged-in user, and the way to every section.

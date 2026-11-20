@@ -13,6 +13,8 @@
 #include "rate_limiter.hpp"
 #include "redis_client.hpp"
 #include "reminder_routes.hpp"
+#include "study_routes.hpp"
+#include "study_store.hpp"
 #include "reminder_scheduler.hpp"
 #include "reminder_store.hpp"
 #include "user_store.hpp"
@@ -103,11 +105,12 @@ int main(int argc, char** argv)
     PresetStore presets(*redis);
     EventStore events(*redis);
     ReminderStore reminders(*redis);
+    StudyStore study(*redis);
     RateLimiter limiter(*redis);
     PushStore pushSubscriptions(*redis, config.pushAllowedHosts);
     WebPushSender pushSender(*vapidKeys, config.vapidSubject);
     ReminderScheduler scheduler(*redis, pushSubscriptions, pushSender);
-    AccountDeleter accounts(users, sessions, presets, events, reminders, pushSubscriptions);
+    AccountDeleter accounts(users, sessions, presets, events, reminders, pushSubscriptions, study);
 
     WebApp app;
     app.loglevel(crow::LogLevel::Info);
@@ -122,6 +125,7 @@ int main(int argc, char** argv)
     addPresetRoutes(app, presets, sessions);
     addEventRoutes(app, events, sessions);
     addReminderRoutes(app, reminders, sessions);
+    addStudyRoutes(app, study, sessions);
     addPushRoutes(app, pushSubscriptions, *vapidKeys, scheduler, sessions, limiter);
 
     // Sends the reminders and calendar notifications that are due, every 15 seconds, until the server stops.
