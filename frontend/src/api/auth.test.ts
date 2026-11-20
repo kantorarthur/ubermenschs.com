@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getMe } from './auth.ts'
+import { changePassword, getMe } from './auth.ts'
 import { getPreset } from './presets.ts'
 
 function answer(status: number, body: unknown) {
@@ -15,8 +15,9 @@ afterEach(() => {
 
 describe('getMe', () => {
   it('returns the logged-in user', async () => {
-    answer(200, { id: '1', email: 'ana@example.com', username: 'Ana' })
-    await expect(getMe()).resolves.toEqual({ id: '1', email: 'ana@example.com', username: 'Ana' })
+    const ana = { id: '1', email: 'ana@example.com', username: 'Ana', createdAt: 1793900000 }
+    answer(200, ana)
+    await expect(getMe()).resolves.toEqual(ana)
   })
 
   it('returns null for a visitor (401)', async () => {
@@ -39,5 +40,17 @@ describe('getPreset', () => {
   it('still throws other errors', async () => {
     answer(401, { error: 'Log in to do this.' })
     await expect(getPreset('42')).rejects.toThrow('Log in to do this.')
+  })
+})
+
+describe('changePassword', () => {
+  it('sends both passwords and passes on a wrong current password', async () => {
+    answer(400, { error: 'The current password is wrong.' })
+    await expect(changePassword({ currentPassword: 'old one', newPassword: 'a new password' })).rejects.toThrow(
+      'The current password is wrong.',
+    )
+    const init = (fetch as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0]
+    expect(init[0]).toBe('/api/auth/password')
+    expect(JSON.parse(String(init[1].body))).toEqual({ currentPassword: 'old one', newPassword: 'a new password' })
   })
 })

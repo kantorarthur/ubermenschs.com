@@ -17,7 +17,8 @@ struct Notification
     std::string url; // the page that opens when the notification is clicked
 };
 
-// Sends the reminders that are due. main() calls sendDue every 15 seconds on its own thread.
+// Sends the reminders and calendar notifications that are due. main() calls sendDue and sendDueEvents
+// every 15 seconds on its own thread.
 //
 // reminders:due (kept by ReminderStore) holds every reminder that is on, scored by the next moment it
 // goes off. For each one that is due, the score is first moved to the following day with
@@ -33,6 +34,11 @@ public:
 
     // Sends every reminder due at `now`; returns how many notifications were delivered.
     int sendDue(std::chrono::sys_seconds now);
+
+    // Sends every calendar event notification due at `now` (events:due, kept by EventStore).
+    // Each one is sent once: it is taken out of events:due with ZREM, and only the server whose ZREM
+    // removed it sends it. Returns how many notifications were delivered.
+    int sendDueEvents(std::chrono::sys_seconds now);
 
     // Sends a notification to every browser of the user; returns how many got it.
     // Subscriptions their push service no longer knows are forgotten.

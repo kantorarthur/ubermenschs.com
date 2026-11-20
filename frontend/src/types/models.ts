@@ -5,6 +5,7 @@ export interface User {
   id: string
   email: string
   username: string
+  createdAt: number // when the account was made, in seconds since 1970 (UTC)
 }
 
 export interface Quote {
@@ -40,6 +41,8 @@ export interface CalendarEvent {
   end: string // local date-time "2026-11-06T15:30"; all-day events end at T23:59
   allDay: boolean
   description: string
+  notify: number[] // minutes before the start to send a notification: any of 0, 10, 30, 60, 1440
+  timezone: string // the browser's time zone when the event was saved, e.g. "Europe/Bucharest"
 }
 
 export interface Reminder {

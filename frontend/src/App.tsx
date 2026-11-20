@@ -1,5 +1,6 @@
-import { Navigate, Route, Routes } from 'react-router'
+import { Route, Routes } from 'react-router'
 import AppShell from './layout/AppShell.tsx'
+import OverviewPage from './pages/OverviewPage.tsx'
 import QuotesPage from './pages/QuotesPage.tsx'
 import StandardQuotesPage from './pages/StandardQuotesPage.tsx'
 import PresetPage from './pages/PresetPage.tsx'
@@ -11,6 +12,8 @@ import RemindersPage from './pages/RemindersPage.tsx'
 import StudyPlanPage from './pages/StudyPlanPage.tsx'
 import LoginPage from './pages/LoginPage.tsx'
 import RegisterPage from './pages/RegisterPage.tsx'
+import AccountPage from './pages/AccountPage.tsx'
+import AccountSettingsPage from './pages/AccountSettingsPage.tsx'
 import NotFoundPage from './pages/NotFoundPage.tsx'
 
 // Every page renders inside AppShell (background, header, sidebar);
@@ -19,7 +22,7 @@ export default function App() {
   return (
     <Routes>
       <Route element={<AppShell />}>
-        <Route index element={<Navigate to="/quotes" replace />} />
+        <Route index element={<OverviewPage />} />
         <Route path="quotes" element={<QuotesPage />} />
         <Route path="quotes/standard" element={<StandardQuotesPage />} />
         <Route path="quotes/:presetId" element={<PresetPage />} />
@@ -31,6 +34,8 @@ export default function App() {
         <Route path="study-plan" element={<StudyPlanPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
+        <Route path="account" element={<AccountPage />} />
+        <Route path="account/settings" element={<AccountSettingsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

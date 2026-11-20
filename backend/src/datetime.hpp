@@ -33,3 +33,8 @@ long long dateTimeNumber(const std::string& dateTime);
 // Expects values isTimeOfDay and isTimeZone accept; throws std::runtime_error for an unknown time zone.
 std::chrono::sys_seconds nextReminderTime(const std::string& time, const std::string& timezone,
                                           std::chrono::sys_seconds after);
+
+// The moment, in UTC, of a local time "YYYY-MM-DDTHH:MM" in a time zone. A time skipped when the clocks
+// go forward becomes the moment of the switch; a time that happens twice becomes the first one.
+// Expects values isLocalDateTime and isTimeZone accept; throws std::runtime_error for an unknown time zone.
+std::chrono::sys_seconds localToUtc(const std::string& localDateTime, const std::string& timezone);

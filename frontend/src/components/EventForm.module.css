@@ -24,6 +24,27 @@
   accent-color: var(--color-accent);
 }
 
+.notify {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+}
+
+.legend {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.notify p {
+  flex-basis: 100%;
+}
+
 @media (max-width: 480px) {
   .row {
     grid-template-columns: minmax(0, 1fr);

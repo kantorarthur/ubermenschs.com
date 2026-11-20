@@ -2,7 +2,7 @@
 #   deps   the compiler, vcpkg and all libraries (cached; rebuilt only when vcpkg.json changes)
 #   build  compiles the server
 #   tests  compiles and runs the tests  (docker compose --profile test run --rm backend-tests)
-#   (last) the final image: only the finished server, so it stays small
+#   (last) the final image: the finished server (and Redis, used only on Render), so it stays small
 
 # ---------- deps ----------
 FROM ubuntu:24.04 AS deps
@@ -56,15 +56,19 @@ FROM ubuntu:24.04
 
 # tzdata: the time zone database (e.g. "Europe/Bucharest") for the reminders.
 # libssl3t64, libcurl4t64, ca-certificates: sending push notifications over HTTPS.
+# redis-server: on Render, Redis runs in this same container (EMBEDDED_REDIS=true, see docker-entrypoint.sh).
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-        tzdata libssl3t64 libcurl4t64 ca-certificates \
+        tzdata libssl3t64 libcurl4t64 ca-certificates redis-server \
     && rm -rf /var/lib/apt/lists/*
 
-# The server does not need to run as root.
+# The server and Redis do not need root: the start script runs them as "app".
 RUN useradd --system --no-create-home app
 COPY --from=build /src/build/server /usr/local/bin/server
-USER app
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+# Remove Windows line endings in case git added them, and make the script runnable.
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && chmod 755 /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 8080
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["server"]

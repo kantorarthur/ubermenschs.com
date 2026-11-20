@@ -12,6 +12,7 @@ struct User
     std::string id;
     std::string email;
     std::string username;
+    long long createdAt = 0; // when the account was made, in seconds since 1970 (UTC)
 };
 
 namespace limits
@@ -44,13 +45,20 @@ public:
 
     std::optional<User> findById(const std::string& userId);
 
+    // Sets a new password after checking the current one. Throws UnauthorizedError if the current
+    // password is wrong and ValidationError if the new one breaks the rules.
+    void changePassword(const std::string& userId, const std::string& currentPassword,
+                        const std::string& newPassword);
+
 private:
     sw::redis::Redis& redis_;
 };
 
-// Logins, with the key from the plan:
+// Logins, with the keys from the plan:
 //
 //   session:{fingerprint of the token}   the user id; expires after sessionLifetime
+//   user:{id}:sessions                   set of the fingerprints of the user's sessions,
+//                                        so all of them can be ended at once (e.g. after a new password)
 class SessionStore
 {
 public:
@@ -63,6 +71,9 @@ public:
     std::optional<std::string> userIdFor(const std::string& token);
 
     void remove(const std::string& token);
+
+    // Ends every session of the user except the one with keepToken (the device that asked).
+    void removeAllExcept(const std::string& userId, const std::string& keepToken);
 
 private:
     sw::redis::Redis& redis_;

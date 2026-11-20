@@ -15,6 +15,7 @@
 #include "reminder_scheduler.hpp"
 #include "reminder_store.hpp"
 #include "user_store.hpp"
+#include "web_app.hpp"
 #include "webpush_crypto.hpp"
 
 #include <crow.h>
@@ -78,6 +79,7 @@ int main(int argc, char** argv)
     }
 
     std::unique_ptr<sw::redis::Redis> redis = makeRedisClient(config);
+    setExpectedReplicas(config.redisReplicas);
     std::unique_ptr<VapidKeyStore> vapidKeys;
     try
     {
@@ -105,8 +107,9 @@ int main(int argc, char** argv)
     WebPushSender pushSender(*vapidKeys, config.vapidSubject);
     ReminderScheduler scheduler(*redis, pushSubscriptions, pushSender);
 
-    crow::SimpleApp app;
+    WebApp app;
     app.loglevel(crow::LogLevel::Info);
+    app.get_middleware<Cors>().allowedOrigins = config.allowedOrigins;
 
     CROW_ROUTE(app, "/api/health").methods(crow::HTTPMethod::Get)([&redis]()
     {
@@ -119,16 +122,18 @@ int main(int argc, char** argv)
     addReminderRoutes(app, reminders, sessions);
     addPushRoutes(app, pushSubscriptions, *vapidKeys, scheduler, sessions, limiter);
 
-    // Sends the reminders that are due, every 15 seconds, until the server stops.
+    // Sends the reminders and calendar notifications that are due, every 15 seconds, until the server stops.
     std::jthread reminderThread([&scheduler](std::stop_token stop)
     {
         while(!stop.stop_requested())
         {
             try
             {
-                const int sent = scheduler.sendDue(ReminderStore::systemClock());
-                if(sent > 0)
-                    CROW_LOG_INFO << "Sent " << sent << " reminder notification(s)";
+                const auto now = ReminderStore::systemClock();
+                const int reminders = scheduler.sendDue(now);
+                const int events = scheduler.sendDueEvents(now);
+                if(reminders + events > 0)
+                    CROW_LOG_INFO << "Sent " << reminders << " reminder and " << events << " event notification(s)";
             }
             catch(const std::exception& error)
             {

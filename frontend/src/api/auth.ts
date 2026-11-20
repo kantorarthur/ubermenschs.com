@@ -32,3 +32,8 @@ export function login(input: { email: string; password: string }): Promise<User>
 export function logout(): Promise<void> {
   return apiFetch<void>('/api/auth/logout', { method: 'POST' })
 }
+
+// POST /api/auth/password  — the backend logs out every other device of the account
+export function changePassword(input: { currentPassword: string; newPassword: string }): Promise<void> {
+  return apiFetch<void>('/api/auth/password', { method: 'POST', body: input })
+}

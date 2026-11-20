@@ -64,6 +64,24 @@ std::optional<bool> optionalBoolField(const crow::json::rvalue& body, const std:
     return type == crow::json::type::True;
 }
 
+std::vector<int> optionalIntListField(const crow::json::rvalue& body, const std::string& name)
+{
+    std::vector<int> values;
+    if(!body.has(name))
+        return values;
+
+    const crow::json::rvalue& list = body[name];
+    if(list.t() != crow::json::type::List)
+        throw ValidationError("The field \"" + name + "\" must be a list of numbers.");
+    for(const crow::json::rvalue& item : list)
+    {
+        if(item.t() != crow::json::type::Number || item.nt() == crow::json::num_type::Floating_point)
+            throw ValidationError("The field \"" + name + "\" must be a list of whole numbers.");
+        values.push_back(static_cast<int>(item.i()));
+    }
+    return values;
+}
+
 std::string cookieValue(const crow::request& request, const std::string& name)
 {
     // The browser sends all cookies in one header: "Cookie: a=1; session=abc; b=2".
@@ -93,11 +111,14 @@ std::string clientIp(const crow::request& request, bool trustProxy)
 {
     if(trustProxy)
     {
-        // "X-Forwarded-For: client, proxy1, proxy2" — the first address is the visitor.
+        // "X-Forwarded-For: a, b, c". Each proxy adds the address it got the request from at the end,
+        // and the visitor can write anything at the start. So the last address is the one our own
+        // proxy (Render) saw: the only one that cannot be faked, as long as nothing else stands in between.
         const std::string& forwarded = request.get_header_value("X-Forwarded-For");
-        const std::string first = trim(forwarded.substr(0, forwarded.find(',')));
-        if(!first.empty())
-            return first;
+        const std::size_t comma = forwarded.rfind(',');
+        const std::string last = trim(comma == std::string::npos ? forwarded : forwarded.substr(comma + 1));
+        if(!last.empty())
+            return last;
     }
     return request.remote_ip_address;
 }

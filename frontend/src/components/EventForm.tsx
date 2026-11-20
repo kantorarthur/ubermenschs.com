@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { EVENT_LIMITS, type EventInput } from '../api/events.ts'
+import { ALL_DAY_NOTIFY_OPTIONS, EVENT_LIMITS, NOTIFY_OPTIONS, type EventInput } from '../api/events.ts'
 import type { CalendarEvent } from '../types/models.ts'
 import { dateKeyOf, timeOf } from '../utils/dates.ts'
 import controls from './Controls.module.css'
@@ -24,6 +24,20 @@ export default function EventForm({ event, defaultDate, onSave, onDelete, onCanc
   const [startTime, setStartTime] = useState(event && !event.allDay ? timeOf(event.start) : '09:00')
   const [endTime, setEndTime] = useState(event && !event.allDay ? timeOf(event.end) : '10:00')
   const [description, setDescription] = useState(event?.description ?? '')
+  const [notify, setNotify] = useState<number[]>(event?.notify ?? [])
+
+  const notifyOptions = allDay ? ALL_DAY_NOTIFY_OPTIONS : NOTIFY_OPTIONS
+
+  function toggleNotify(minutes: number, on: boolean) {
+    setNotify((current) => (on ? [...current, minutes] : current.filter((m) => m !== minutes)))
+  }
+
+  function changeAllDay(value: boolean) {
+    setAllDay(value)
+    // Keep only the choices the new kind of event offers.
+    const offered = (value ? ALL_DAY_NOTIFY_OPTIONS : NOTIFY_OPTIONS).map((option) => option.minutes)
+    setNotify((current) => current.filter((m) => offered.includes(m)))
+  }
 
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -47,6 +61,7 @@ export default function EventForm({ event, defaultDate, onSave, onDelete, onCanc
         start: `${startDate}T${allDay ? '00:00' : startTime}`,
         end: `${endDate}T${allDay ? '23:59' : endTime}`,
         description,
+        notify: [...notify].sort((a, b) => a - b),
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.')
@@ -83,7 +98,7 @@ export default function EventForm({ event, defaultDate, onSave, onDelete, onCanc
       </label>
 
       <label className={styles.checkbox}>
-        <input type="checkbox" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} />
+        <input type="checkbox" checked={allDay} onChange={(e) => changeAllDay(e.target.checked)} />
         All day
       </label>
 
@@ -147,6 +162,23 @@ export default function EventForm({ event, defaultDate, onSave, onDelete, onCanc
           maxLength={EVENT_LIMITS.description}
         />
       </label>
+
+      <fieldset className={styles.notify}>
+        <legend className={styles.legend}>Notify me</legend>
+        {notifyOptions.map((option) => (
+          <label key={option.minutes} className={styles.checkbox}>
+            <input
+              type="checkbox"
+              checked={notify.includes(option.minutes)}
+              onChange={(e) => toggleNotify(option.minutes, e.target.checked)}
+            />
+            {option.label}
+          </label>
+        ))}
+        <p className={controls.hint}>
+          Notifications go to the devices where they are turned on (on the Reminder page).
+        </p>
+      </fieldset>
 
       {error && <p className={controls.error}>{error}</p>}
 

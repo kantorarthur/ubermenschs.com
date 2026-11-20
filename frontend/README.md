@@ -54,6 +54,8 @@ To add a background, put a `.webp` file into `landscape/` or `portrait/`; no cod
 - `public/manifest.webmanifest` and `public/icons/` let phones install the site like an app.
 - `public/sw.js` is the service worker: it shows the reminder notifications, also when no tab is open,
   and opens the Reminder page when one is clicked.
+- `src/utils/install.ts` and the "Download application" button (`src/layout/InstallButton.tsx`) install the site
+  as an app: the browser's own install window in Chrome and Edge, written steps in Safari and Firefox.
 - `src/utils/notifications.ts` asks for permission and subscribes the browser; the panel on the Reminder page
   (`src/components/NotificationSettings.tsx`) has the buttons.
 - Browsers allow this only on `https://` sites and on `localhost`. Locally, use Chrome, Edge or Firefox in a

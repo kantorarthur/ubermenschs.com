@@ -40,6 +40,8 @@ and is never touched (the tests refuse to run on database 0).
 
 | File | What it checks |
 | --- | --- |
+| `tests/config_test.cpp` | reading `REDIS_URL` |
+| `tests/cors_test.cpp` | CORS headers only for the allowed sites, preflight answers |
 | `tests/text_test.cpp` | trimming, character counting (UTF-8), email normalising, ids, length limits |
 | `tests/http_test.cpp` | reading cookies, the client IP with and without a trusted proxy, true/false and optional fields |
 | `tests/datetime_test.cpp` | dates (leap years, 30 February), times, time zones, sorting numbers |
@@ -64,9 +66,14 @@ If Redis cannot be reached, the Redis tests are skipped (not failed).
 | `REDIS_HOST` | `127.0.0.1` | Redis primary host (`redis-primary` inside compose) |
 | `REDIS_PORT` | `6379` | Redis primary port |
 | `REDIS_PASSWORD` | none | Redis password, if the server has one |
+| `REDIS_URL` | none | `redis://[user:password@]host[:port]`, e.g. for a Redis hosted elsewhere; replaces the three above |
+| `EMBEDDED_REDIS` | `false` | `true` on Render: `docker-entrypoint.sh` starts Redis in the same container, data in `/data/redis` |
+| `REDIS_MAXMEMORY` | `200mb` | Memory limit of that embedded Redis (it refuses writes instead of deleting keys when full) |
+| `REDIS_REPLICAS` | `0` | How many replicas must confirm important writes (`WAIT`). `1` in docker compose, `0` on Render (no replica there) |
 | `COOKIE_SECURE` | `false` | `true` in production: the login cookie is sent only over HTTPS |
 | `COOKIE_DOMAIN` | none | e.g. `.ubermenschs.com` in production, so the cookie works for the site and the API |
-| `TRUST_PROXY` | `false` | `true` behind Render's proxy: the visitor's IP is read from `X-Forwarded-For`. Keep it `false` without a proxy, or anyone could fake their IP |
+| `TRUST_PROXY` | `false` | `true` behind Render's proxy: the visitor's IP is the last address in `X-Forwarded-For` (the one Render added; the ones before it can be faked). Keep it `false` without a proxy, and keep `api.ubermenschs.com` "DNS only" at Cloudflare (see DEPLOY.md) |
+| `ALLOWED_ORIGINS` | none | Comma-separated sites that may call the API from a browser (CORS), e.g. `https://ubermenschs.com`. Not needed locally (Vite forwards `/api`) |
 | `VAPID_PUBLIC_KEY` | none | The key pair that signs push notifications (base64url). Without it, a pair is made once and kept in Redis (`vapid:keys`), fine for local development. Set it in production |
 | `VAPID_PRIVATE_KEY` | none | Secret, like a password. Make a pair with `docker compose run --rm backend server --generate-vapid-keys`. Changing the pair later turns off notifications on every device until they are turned on again |
 | `VAPID_SUBJECT` | `https://ubermenschs.com` | How a push service can contact the site's owner: `https://...` or `mailto:...` |
@@ -80,7 +87,8 @@ If Redis cannot be reached, the Redis tests are skipped (not failed).
 | POST | `/api/auth/register` | `{ email, username, password }` | 201 + the user, logged in (sets the cookie) |
 | POST | `/api/auth/login` | `{ email, password }` | 200 + the user, logged in; 401 if wrong |
 | POST | `/api/auth/logout` | | 204, logged out (clears the cookie) |
-| GET | `/api/auth/me` | | 200 + the logged-in user, or 401 |
+| GET | `/api/auth/me` | | 200 + the logged-in user (`id`, `email`, `username`, `createdAt`), or 401 |
+| POST | `/api/auth/password` | `{ currentPassword, newPassword }` | 204; every other device of the account is logged out. 400 if the current password is wrong |
 | GET | `/api/presets` | | the user's presets, with their quotes |
 | POST | `/api/presets` | `{ name }` | 201 + the new preset |
 | GET | `/api/presets/:id` | | one preset |
@@ -91,8 +99,8 @@ If Redis cannot be reached, the Redis tests are skipped (not failed).
 | GET | `/api/settings` | | `{ activePreset }`: `"standard"` or a preset id |
 | PUT | `/api/settings/active-preset` | `{ presetId }` | 204 |
 | GET | `/api/events?from=YYYY-MM-DD&to=YYYY-MM-DD` | | the events touching those days (at most 400 days), by start |
-| POST | `/api/events` | `{ title, start, end, allDay, description }` | 201 + the new event |
-| PATCH | `/api/events/:id` | `{ title, start, end, allDay, description }` | the event (every field replaced) |
+| POST | `/api/events` | `{ title, start, end, allDay, description, notify, timezone }` | 201 + the new event |
+| PATCH | `/api/events/:id` | the same fields | the event (every field replaced) |
 | DELETE | `/api/events/:id` | | 204 |
 | GET | `/api/reminders` | | the user's reminders, by time of day |
 | POST | `/api/reminders` | `{ time, message, timezone }` | 201 + the new reminder (on) |
@@ -112,6 +120,12 @@ Calendar and reminders:
 - `start` and `end` are local times like `2026-11-06T14:30`; an all-day event goes from `T00:00` to `T23:59`.
 - `time` is `HH:MM`; `timezone` is a name from the time zone database (`Europe/Bucharest`), checked with
   `std::chrono::locate_zone` (the Docker images install `tzdata` for it).
+- `notify` lists when an event sends a notification, in minutes before the start: any of `0`, `10`, `30`, `60`,
+  `1440` (several allowed). For all-day events they count from 09:00 on the first day. `timezone` is the
+  browser's time zone; it is needed when `notify` is not empty.
+- `events:due` (sorted set) holds the event notifications still to send, member `{eventId}:{minutes}`, scored by
+  the moment; the scheduler takes each one out with `ZREM` (so only one server sends it) and sends it.
+  Moments already past when the event is saved are not planned.
 - A user can have up to 2000 events and 20 reminders.
 - Redis keys: `event:{id}` (hash) and `user:{id}:events` (sorted set, the score is the start as a number);
   `reminder:{id}` (hash) and `user:{id}:reminders` (set).
@@ -134,6 +148,8 @@ How logins work:
 - A login creates a random 64-character token. The browser keeps it in the `session` cookie
   (HttpOnly, SameSite=Lax, 30 days); Redis keeps only a BLAKE2b fingerprint of it, under `session:{fingerprint}`.
 - Logging out deletes the session in Redis and clears the cookie.
+- `user:{id}:sessions` lists the fingerprints of an account's sessions; changing the password ends all of them
+  except the one of the device that changed it.
 
 Rate limits (`src/rate_limiter.hpp`, fixed windows counted in Redis under `ratelimit:{name}:{subject}`):
 
@@ -142,6 +158,8 @@ Rate limits (`src/rate_limiter.hpp`, fixed windows counted in Redis under `ratel
 | `login-ip` | every login attempt from one IP | 20 | 15 min |
 | `login-fail` | wrong passwords for one email, from any IP; cleared by a successful login | 5 | 15 min |
 | `register-ip` | new accounts from one IP | 5 | 1 hour |
+| `password-fail` | wrong current passwords when changing the password, per account; cleared by a success | 5 | 15 min |
+| `push-test` | test notifications, per account | 5 | 10 min |
 
 A counter is increased and given its expiry in one Lua script, so a counter can never be left without one.
 
@@ -171,6 +189,8 @@ src/
   preset_store.*       reads and writes presets in Redis (keys, transactions, WAIT)
   http.*               JSON responses and reading request bodies
   text.*               trimming and length checks (counts characters, not bytes)
+  web_app.hpp/.cpp     the Crow app type, with the CORS middleware
+docker-entrypoint.sh   starts the server in Docker (and Redis too, with EMBEDDED_REDIS=true)
   errors.hpp           ValidationError 400, UnauthorizedError 401, NotFoundError 404, ConflictError 409,
                        TooManyRequestsError 429
 tests/

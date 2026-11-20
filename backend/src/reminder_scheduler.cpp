@@ -1,6 +1,7 @@
 #include "reminder_scheduler.hpp"
 
 #include "datetime.hpp"
+#include "event_store.hpp"
 #include "reminder_store.hpp"
 
 #include <crow/json.h>
@@ -79,6 +80,75 @@ int ReminderScheduler::sendDue(std::chrono::sys_seconds now)
 
         delivered += sendToUser(fields["userId"], Notification{"Reminder", fields["message"],
                                                                "reminder-" + reminderId, "/reminders"});
+    }
+    return delivered;
+}
+
+namespace
+{
+    // What the notification of an event says under its title.
+    std::string eventNotificationBody(const std::string& start, bool allDay, int minutesBefore)
+    {
+        const std::string time = start.substr(11, 5);
+        if(allDay)
+            return minutesBefore >= 1440 ? "Tomorrow, all day" : "Today, all day";
+        if(minutesBefore == 0)
+            return "Starts now (" + time + ")";
+        if(minutesBefore == 60)
+            return "Starts in 1 hour, at " + time;
+        if(minutesBefore == 1440)
+            return "Tomorrow at " + time;
+        return "Starts in " + std::to_string(minutesBefore) + " minutes, at " + time;
+    }
+}
+
+int ReminderScheduler::sendDueEvents(std::chrono::sys_seconds now)
+{
+    const double nowScore = static_cast<double>(now.time_since_epoch().count());
+
+    std::vector<std::pair<std::string, double>> due;
+    redis_.zrangebyscore(DUE_EVENTS_KEY,
+                         sw::redis::RightBoundedInterval<double>(nowScore, sw::redis::BoundType::LEFT_OPEN),
+                         sw::redis::LimitOptions{0, BATCH}, std::back_inserter(due));
+
+    int delivered = 0;
+    for(const auto& [member, score] : due)
+    {
+        // Claim it: only one ZREM can remove it, so only one server sends it.
+        if(redis_.zrem(DUE_EVENTS_KEY, member) == 0)
+            continue;
+
+        const auto lateness = now - std::chrono::sys_seconds(std::chrono::seconds(static_cast<long long>(score)));
+        if(lateness > maxLateness)
+        {
+            CROW_LOG_INFO << "Event notification " << member << " skipped: " << lateness.count() << " s late";
+            continue;
+        }
+
+        // "{eventId}:{minutes}"
+        const std::size_t colon = member.find(':');
+        if(colon == std::string::npos)
+            continue;
+        const std::string eventId = member.substr(0, colon);
+        int minutesBefore = 0;
+        try
+        {
+            minutesBefore = std::stoi(member.substr(colon + 1));
+        }
+        catch(const std::exception&)
+        {
+            continue;
+        }
+
+        std::unordered_map<std::string, std::string> fields;
+        redis_.hgetall("event:" + eventId, std::inserter(fields, fields.begin()));
+        if(fields.empty())
+            continue;
+
+        const Notification notification{fields["title"],
+                                        eventNotificationBody(fields["start"], fields["allDay"] == "1", minutesBefore),
+                                        "event-" + eventId + "-" + std::to_string(minutesBefore), "/calendar"};
+        delivered += sendToUser(fields["userId"], notification);
     }
     return delivered;
 }

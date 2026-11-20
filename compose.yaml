@@ -13,6 +13,7 @@ services:
       PORT: "8080"
       REDIS_HOST: redis-primary   # the service name below, not localhost
       REDIS_PORT: "6379"
+      REDIS_REPLICAS: "1"         # wait for redis-replica to confirm important writes
     depends_on:
       redis-primary:
         condition: service_healthy

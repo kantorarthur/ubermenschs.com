@@ -51,6 +51,7 @@ add_library(core STATIC
     src/reminder_store.cpp
     src/text.cpp
     src/user_store.cpp
+    src/web_app.cpp
     src/webpush_crypto.cpp
 )
 target_include_directories(core PUBLIC src)
@@ -67,6 +68,8 @@ if(BUILD_TESTS)
     find_package(GTest CONFIG REQUIRED)
 
     add_executable(tests
+        tests/config_test.cpp
+        tests/cors_test.cpp
         tests/crypto_test.cpp
         tests/datetime_test.cpp
         tests/event_store_test.cpp

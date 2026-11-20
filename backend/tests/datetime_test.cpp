@@ -126,3 +126,14 @@ TEST(NextReminderTime, UnknownTimeZone)
 {
     EXPECT_THROW(nextReminderTime("07:00", "Europe/Atlantis", utc(2026y / 11 / 6, 0h)), std::runtime_error);
 }
+
+TEST(LocalToUtc, WinterSummerAndTheirSwitches)
+{
+    EXPECT_EQ(localToUtc("2026-11-06T14:30", "Europe/Bucharest"), utc(2026y / 11 / 6, 12h + 30min)); // UTC+2
+    EXPECT_EQ(localToUtc("2027-07-01T09:00", "Europe/Bucharest"), utc(2027y / 7 / 1, 6h));          // UTC+3
+    EXPECT_EQ(localToUtc("2026-11-06T07:00", "America/New_York"), utc(2026y / 11 / 6, 12h));
+    // 03:30 does not exist on 28 March 2027: the moment of the switch.
+    EXPECT_EQ(localToUtc("2027-03-28T03:30", "Europe/Bucharest"), utc(2027y / 3 / 28, 1h));
+    // 03:30 happens twice on 31 October 2027: the first one.
+    EXPECT_EQ(localToUtc("2027-10-31T03:30", "Europe/Bucharest"), utc(2027y / 10 / 31, 30min));
+}

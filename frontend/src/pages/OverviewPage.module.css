@@ -1,0 +1,116 @@
+.intro {
+  max-width: 680px;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.heading {
+  margin-top: 8px;
+  font-size: 28px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 22px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(8px);
+}
+
+.today {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.cardTitle {
+  font-size: 22px;
+}
+
+.subTitle {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list li {
+  display: flex;
+  gap: 12px;
+  overflow-wrap: anywhere;
+}
+
+.time {
+  flex: 0 0 auto;
+  min-width: 56px;
+  color: var(--color-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A reminder whose time today has already passed. */
+.done {
+  opacity: 0.55;
+}
+
+.more {
+  margin-top: auto;
+  color: var(--color-accent);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.more:hover {
+  text-decoration: underline;
+}
+
+.sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  padding: 16px 18px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text);
+  text-decoration: none;
+  backdrop-filter: blur(8px);
+}
+
+.section:hover,
+.section:focus-visible {
+  border-color: var(--color-accent);
+}
+
+.sectionTitle {
+  font-family: var(--font-serif);
+  font-size: 20px;
+}
+
+.sectionText {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}

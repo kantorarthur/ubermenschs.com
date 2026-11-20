@@ -5,6 +5,7 @@
 #include "rate_limiter.hpp"
 #include "reminder_scheduler.hpp"
 #include "user_store.hpp"
+#include "web_app.hpp"
 
 #include <crow.h>
 
@@ -16,5 +17,5 @@
 //   POST /api/push/test             → { sent, devices }: a test notification to every browser of the user
 //
 // All except the public key need a logged-in user (otherwise 401).
-void addPushRoutes(crow::SimpleApp& app, PushStore& subscriptions, VapidKeyStore& keys,
+void addPushRoutes(WebApp& app, PushStore& subscriptions, VapidKeyStore& keys,
                    ReminderScheduler& scheduler, SessionStore& sessions, RateLimiter& limiter);

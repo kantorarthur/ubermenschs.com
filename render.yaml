@@ -1,0 +1,47 @@
+# Render Blueprint: the C++ backend (api.ubermenschs.com) with its Redis inside the same service.
+# The site itself (frontend/) is on Cloudflare Pages, see DEPLOY.md.
+#
+# Render reads this file when you create a Blueprint from the repository (Dashboard → New → Blueprint).
+# Values marked "sync: false" are secrets: Render asks for them once, when the Blueprint is created.
+#
+# Redis runs in the backend's container (EMBEDDED_REDIS, see backend/docker-entrypoint.sh) and keeps
+# its data on the disk below. Render takes a snapshot of the disk every 24 hours and keeps it 7 days.
+
+services:
+  - type: web
+    name: ubermenschs-api
+    runtime: docker
+    region: frankfurt                 # closest to Romania; cannot be changed later
+    plan: 0.5c-512mb                  # the smallest paid instance: it never sleeps, so reminders go out on time
+    branch: main
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/health
+    buildFilter:
+      paths:
+        - backend/**                  # changes to the frontend do not rebuild the backend
+    disk:
+      name: redis-data
+      mountPath: /data                # Redis writes to /data/redis; everything else in the container is lost on deploy
+      sizeGB: 1
+    envVars:
+      - key: EMBEDDED_REDIS           # start Redis inside this service (127.0.0.1:6379)
+        value: "true"
+      - key: REDIS_MAXMEMORY          # the 512 MB are shared by Redis and the server
+        value: 200mb
+      - key: REDIS_REPLICAS           # no replica: do not wait for one
+        value: "0"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_DOMAIN            # the login cookie works for ubermenschs.com and api.ubermenschs.com
+        value: .ubermenschs.com
+      - key: TRUST_PROXY              # Render's proxy adds the visitor's address to X-Forwarded-For
+        value: "true"
+      - key: ALLOWED_ORIGINS          # the sites that may call the API (CORS)
+        value: https://ubermenschs.com,https://www.ubermenschs.com
+      - key: VAPID_SUBJECT
+        value: https://ubermenschs.com
+      - key: VAPID_PUBLIC_KEY         # from: docker compose run --rm backend server --generate-vapid-keys
+        sync: false
+      - key: VAPID_PRIVATE_KEY        # secret; never commit it
+        sync: false

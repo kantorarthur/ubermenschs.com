@@ -2,6 +2,7 @@
 
 #include "reminder_store.hpp"
 #include "user_store.hpp"
+#include "web_app.hpp"
 
 #include <crow.h>
 
@@ -13,4 +14,4 @@
 //   DELETE /api/reminders/:id    → 204
 //
 // All of them need a logged-in user (otherwise 401).
-void addReminderRoutes(crow::SimpleApp& app, ReminderStore& store, SessionStore& sessions);
+void addReminderRoutes(WebApp& app, ReminderStore& store, SessionStore& sessions);

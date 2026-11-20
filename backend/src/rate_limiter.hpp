@@ -23,6 +23,9 @@ namespace rateLimits
     inline const RateLimit loginFailuresPerEmail{"login-fail", 5, std::chrono::minutes(15)};
     // New accounts from one IP address.
     inline const RateLimit registerPerIp{"register-ip", 5, std::chrono::hours(1)};
+    // Wrong current passwords when changing the password, per account: someone at an unlocked
+    // computer cannot guess the password to take over the account.
+    inline const RateLimit passwordChangeFailuresPerUser{"password-fail", 5, std::chrono::minutes(15)};
     // Test notifications (the button on the Reminder page) of one user.
     inline const RateLimit pushTestPerUser{"push-test", 5, std::chrono::minutes(10)};
 }

@@ -86,3 +86,27 @@ TEST_F(UserStoreTest, AnEmailFromAnUnfinishedRegistrationCanBeUsedAgain)
     const User ana = users.registerUser("ana@example.com", "Ana", PASSWORD);
     EXPECT_EQ(redis->get("user:by-email:ana@example.com").value(), ana.id);
 }
+
+TEST_F(UserStoreTest, RegisterRemembersWhenTheAccountWasMade)
+{
+    UserStore users(*redis);
+    const User user = users.registerUser("ana@example.com", "Ana", "correct horse battery");
+    EXPECT_GT(user.createdAt, 1700000000); // a real moment, not 0
+    EXPECT_EQ(users.findById(user.id)->createdAt, user.createdAt);
+}
+
+TEST_F(UserStoreTest, ChangePassword)
+{
+    UserStore users(*redis);
+    const User user = users.registerUser("ana@example.com", "Ana", "correct horse battery");
+
+    EXPECT_THROW(users.changePassword(user.id, "wrong password", "a brand new password"), UnauthorizedError);
+    EXPECT_THROW(users.changePassword(user.id, "correct horse battery", "short"), ValidationError);
+    // Nothing changed so far.
+    EXPECT_TRUE(users.authenticate("ana@example.com", "correct horse battery"));
+
+    users.changePassword(user.id, "correct horse battery", "a brand new password");
+    EXPECT_FALSE(users.authenticate("ana@example.com", "correct horse battery"));
+    EXPECT_TRUE(users.authenticate("ana@example.com", "a brand new password"));
+    EXPECT_THROW(users.changePassword("999", "anything at all", "a brand new password"), UnauthorizedError);
+}

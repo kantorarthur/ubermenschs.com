@@ -5,7 +5,7 @@
 
 #include <string>
 
-void addPushRoutes(crow::SimpleApp& app, PushStore& subscriptions, VapidKeyStore& keys,
+void addPushRoutes(WebApp& app, PushStore& subscriptions, VapidKeyStore& keys,
                    ReminderScheduler& scheduler, SessionStore& sessions, RateLimiter& limiter)
 {
     CROW_ROUTE(app, "/api/push/public-key")

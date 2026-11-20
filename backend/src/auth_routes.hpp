@@ -3,6 +3,7 @@
 #include "config.hpp"
 #include "rate_limiter.hpp"
 #include "user_store.hpp"
+#include "web_app.hpp"
 
 #include <crow.h>
 
@@ -12,8 +13,9 @@
 //   POST /api/auth/login      { email, password }             → 200 + the user, logged in
 //   POST /api/auth/logout                                     → 204, logged out
 //   GET  /api/auth/me                                         → 200 + the user, or 401
+//   POST /api/auth/password   { currentPassword, newPassword } → 204; other devices are logged out
 //
 // "Logged in" means the answer sets the HttpOnly "session" cookie.
 // Register and login are rate limited (see rateLimits): over the limit they answer 429.
-void addAuthRoutes(crow::SimpleApp& app, UserStore& users, SessionStore& sessions, RateLimiter& limiter,
+void addAuthRoutes(WebApp& app, UserStore& users, SessionStore& sessions, RateLimiter& limiter,
                    const Config& config);

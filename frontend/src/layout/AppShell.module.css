@@ -30,6 +30,10 @@
 }
 
 .header {
+  /* Its own layer above the sidebar and the page, so the account menu opens over them
+     (the sidebar's backdrop-filter would otherwise paint on top of it). */
+  position: relative;
+  z-index: 10;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -38,6 +42,13 @@
   background: var(--color-panel-strong);
   border-bottom: 1px solid var(--color-border);
   backdrop-filter: blur(8px);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
 }
 
 .body {
@@ -49,7 +60,21 @@
 .content {
   flex: 999 1 560px;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
   padding: 40px 48px;
+}
+
+/* At the end of every page; pushed to the bottom when the page is short. */
+.footer {
+  margin-top: auto;
+  padding-top: 48px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.footerLink {
+  color: var(--color-accent);
 }
 
 /* Phones: less padding, the sidebar sits above the content (see Sidebar.module.css). */
