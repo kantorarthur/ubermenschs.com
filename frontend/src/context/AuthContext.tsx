@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import * as authApi from '../api/auth.ts'
 import type { User } from '../types/models.ts'
-import { forgetSubscriptionOnServer, syncSubscription } from '../utils/notifications.ts'
+import { forgetSubscriptionOnServer, syncSubscription, unsubscribeThisBrowser } from '../utils/notifications.ts'
 import { AuthContext, type AuthContextValue } from './authContext.ts'
 
 // Knows who is logged in, for the whole app.
@@ -43,9 +43,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }, [])
 
+  // A wrong password throws and changes nothing. Afterwards this browser also stops getting notifications.
+  const deleteAccount = useCallback(async (password: string) => {
+    await authApi.deleteAccount({ password })
+    setUser(null)
+    unsubscribeThisBrowser().catch(() => undefined)
+  }, [])
+
   const value = useMemo<AuthContextValue>(
-    () => ({ user, isLoading, login, register, logout }),
-    [user, isLoading, login, register, logout],
+    () => ({ user, isLoading, login, register, logout, deleteAccount }),
+    [user, isLoading, login, register, logout, deleteAccount],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

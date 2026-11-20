@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { changePassword, getMe } from './auth.ts'
+import { changePassword, deleteAccount, getMe } from './auth.ts'
 import { getPreset } from './presets.ts'
 
 function answer(status: number, body: unknown) {
@@ -52,5 +52,25 @@ describe('changePassword', () => {
     const init = (fetch as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0]
     expect(init[0]).toBe('/api/auth/password')
     expect(JSON.parse(String(init[1].body))).toEqual({ currentPassword: 'old one', newPassword: 'a new password' })
+  })
+})
+
+describe('deleteAccount', () => {
+  it('sends the password with DELETE', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response(null, { status: 204 }))),
+    )
+    await expect(deleteAccount({ password: 'my password' })).resolves.toBeUndefined()
+    const [url, init] = (fetch as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0]
+    expect(url).toBe('/api/auth/account')
+    expect(init.method).toBe('DELETE')
+    expect(init.credentials).toBe('include')
+    expect(JSON.parse(String(init.body))).toEqual({ password: 'my password' })
+  })
+
+  it('passes on a wrong password', async () => {
+    answer(400, { error: 'The password is wrong.' })
+    await expect(deleteAccount({ password: 'wrong' })).rejects.toThrow('The password is wrong.')
   })
 })

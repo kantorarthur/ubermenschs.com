@@ -264,3 +264,21 @@ void EventStore::remove(const std::string& userId, const std::string& eventId)
                .zrem(DUE_EVENTS_KEY, oldDue.begin(), oldDue.end());
     transaction.exec();
 }
+
+void EventStore::removeAll(const std::string& userId)
+{
+    std::vector<std::string> ids;
+    redis_.zrange(userEventsKey(userId), 0, -1, std::back_inserter(ids));
+
+    auto transaction = redis_.transaction();
+    for(const std::string& eventId : ids)
+    {
+        if(!owns(userId, eventId))
+            continue;
+        const auto due = allDueMembers(eventId);
+        transaction.del(eventKey(eventId))
+                   .zrem(DUE_EVENTS_KEY, due.begin(), due.end());
+    }
+    transaction.del(userEventsKey(userId));
+    transaction.exec();
+}

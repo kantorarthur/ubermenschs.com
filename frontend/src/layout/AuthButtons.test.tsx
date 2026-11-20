@@ -13,6 +13,7 @@ function renderWith(user: AuthContextValue['user']) {
     login: vi.fn(),
     register: vi.fn(),
     logout: vi.fn(() => Promise.resolve()),
+    deleteAccount: vi.fn(() => Promise.resolve()),
   }
   render(
     <MemoryRouter>

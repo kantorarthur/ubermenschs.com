@@ -65,6 +65,9 @@ public:
     Reminder update(const std::string& userId, const std::string& reminderId, const ReminderChanges& changes);
     void remove(const std::string& userId, const std::string& reminderId);
 
+    // Deletes every reminder of the user (when the account is deleted).
+    void removeAll(const std::string& userId);
+
 private:
     bool owns(const std::string& userId, const std::string& reminderId);
     Reminder load(const std::string& reminderId);

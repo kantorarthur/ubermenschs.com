@@ -29,7 +29,8 @@ Once the connection was open, the first byte of the response arrived in 60 ms at
 
 - **Quotes in the header**: a random quote and background painting on every page, from the active quote set;
   users make their own sets.
-- **Accounts**: register, log in, account details, change password (other devices are logged out).
+- **Accounts**: register, log in, account details, change password (other devices are logged out), delete the
+  account with all its data.
   Passwords are stored as Argon2id hashes; sessions are random tokens in an HttpOnly cookie, and Redis keeps
   only their fingerprints.
 - **Calendar**: events in a month view, each with optional notifications (at the start, 10 or 30 minutes,

@@ -89,6 +89,7 @@ If Redis cannot be reached, the Redis tests are skipped (not failed).
 | POST | `/api/auth/logout` | | 204, logged out (clears the cookie) |
 | GET | `/api/auth/me` | | 200 + the logged-in user (`id`, `email`, `username`, `createdAt`), or 401 |
 | POST | `/api/auth/password` | `{ currentPassword, newPassword }` | 204; every other device of the account is logged out. 400 if the current password is wrong |
+| DELETE | `/api/auth/account` | `{ password }` | 204; the account and all its data are deleted (sessions, quote sets, events, reminders, notification subscriptions) and the cookie is cleared. 400 if the password is wrong |
 | GET | `/api/presets` | | the user's presets, with their quotes |
 | POST | `/api/presets` | `{ name }` | 201 + the new preset |
 | GET | `/api/presets/:id` | | one preset |
@@ -158,7 +159,7 @@ Rate limits (`src/rate_limiter.hpp`, fixed windows counted in Redis under `ratel
 | `login-ip` | every login attempt from one IP | 20 | 15 min |
 | `login-fail` | wrong passwords for one email, from any IP; cleared by a successful login | 5 | 15 min |
 | `register-ip` | new accounts from one IP | 5 | 1 hour |
-| `password-fail` | wrong current passwords when changing the password, per account; cleared by a success | 5 | 15 min |
+| `password-fail` | wrong passwords when changing the password or deleting the account, per account; cleared by a success | 5 | 15 min |
 | `push-test` | test notifications, per account | 5 | 10 min |
 
 A counter is increased and given its expiry in one Lua script, so a counter can never be left without one.

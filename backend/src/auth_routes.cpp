@@ -44,8 +44,8 @@ namespace
     }
 }
 
-void addAuthRoutes(WebApp& app, UserStore& users, SessionStore& sessions, RateLimiter& limiter,
-                   const Config& config)
+void addAuthRoutes(WebApp& app, UserStore& users, SessionStore& sessions, AccountDeleter& accounts,
+                   RateLimiter& limiter, const Config& config)
 {
     CROW_ROUTE(app, "/api/auth/register")
         .methods(crow::HTTPMethod::Post)
@@ -133,6 +133,33 @@ void addAuthRoutes(WebApp& app, UserStore& users, SessionStore& sessions, RateLi
             // Someone who knew the old password is logged out everywhere else; this device stays logged in.
             sessions.removeAllExcept(userId, cookieValue(request, SESSION_COOKIE));
             return noContent();
+        });
+    });
+
+    CROW_ROUTE(app, "/api/auth/account")
+        .methods(crow::HTTPMethod::Delete)
+        ([&users, &sessions, &accounts, &limiter, &config](const crow::request& request)
+    {
+        return handle([&]()
+        {
+            const std::string userId = requireUserId(request, sessions);
+            const crow::json::rvalue body = jsonObjectBody(request);
+
+            // The same counter as for the password change: someone at an unlocked computer
+            // cannot guess the password to delete the account.
+            limiter.check(rateLimits::passwordChangeFailuresPerUser, userId);
+            if(!users.passwordMatches(userId, stringField(body, "password")))
+            {
+                limiter.hit(rateLimits::passwordChangeFailuresPerUser, userId);
+                throw ValidationError("The password is wrong.");
+            }
+
+            accounts.deleteAccount(userId);
+            limiter.reset(rateLimits::passwordChangeFailuresPerUser, userId);
+
+            crow::response response = noContent();
+            response.add_header("Set-Cookie", sessionCookie("", 0, config));
+            return response;
         });
     });
 

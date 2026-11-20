@@ -37,3 +37,8 @@ export function logout(): Promise<void> {
 export function changePassword(input: { currentPassword: string; newPassword: string }): Promise<void> {
   return apiFetch<void>('/api/auth/password', { method: 'POST', body: input })
 }
+
+// DELETE /api/auth/account  — deletes the account and everything in it, then logs out
+export function deleteAccount(input: { password: string }): Promise<void> {
+  return apiFetch<void>('/api/auth/account', { method: 'DELETE', body: input })
+}

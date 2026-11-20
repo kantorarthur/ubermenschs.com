@@ -32,6 +32,7 @@ endif()
 
 # Everything except main(), so the server and the tests share the same code.
 add_library(core STATIC
+    src/account_deleter.cpp
     src/auth_routes.cpp
     src/config.cpp
     src/crypto.cpp
@@ -68,6 +69,7 @@ if(BUILD_TESTS)
     find_package(GTest CONFIG REQUIRED)
 
     add_executable(tests
+        tests/account_deleter_test.cpp
         tests/config_test.cpp
         tests/cors_test.cpp
         tests/crypto_test.cpp
