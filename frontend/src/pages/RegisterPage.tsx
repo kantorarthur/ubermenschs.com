@@ -4,11 +4,14 @@ import Page from '../components/Page.tsx'
 import controls from '../components/Controls.module.css'
 import { PASSWORD_MIN } from '../api/auth.ts'
 import { useAuth } from '../context/authContext.ts'
+import { useCookieConsent } from '../utils/cookieConsent.ts'
 import styles from './AuthPage.module.css'
 
 export default function RegisterPage() {
   const { user, register } = useAuth()
   const navigate = useNavigate()
+  // The login cookie needs the visitor's OK first (the notice at the bottom).
+  const { accepted: cookieAccepted } = useCookieConsent()
   const location = useLocation()
   const from = (location.state as { from?: unknown } | null)?.from
   const returnPath = typeof from === 'string' && from.startsWith('/') ? from : '/quotes'
@@ -97,9 +100,16 @@ export default function RegisterPage() {
         </label>
 
         {error && <p className={controls.error}>{error}</p>}
+        {!cookieAccepted && (
+          <p className={controls.hint}>To create an account, first accept the login cookie in the notice at the bottom.</p>
+        )}
 
         <div className={controls.actions}>
-          <button type="submit" className={`${controls.button} ${controls.primary}`} disabled={isSaving}>
+          <button
+            type="submit"
+            className={`${controls.button} ${controls.primary}`}
+            disabled={isSaving || !cookieAccepted}
+          >
             Create account
           </button>
         </div>

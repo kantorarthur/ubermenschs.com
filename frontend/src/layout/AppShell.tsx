@@ -1,9 +1,10 @@
-import { Outlet, useLocation } from 'react-router'
+import { Link, Outlet, useLocation } from 'react-router'
 import Logo from './Logo.tsx'
 import QuoteBar from './QuoteBar.tsx'
 import AuthButtons from './AuthButtons.tsx'
 import InstallButton from './InstallButton.tsx'
 import Sidebar from './Sidebar.tsx'
+import CookieBanner from './CookieBanner.tsx'
 import { landscapeBackgrounds, portraitBackgrounds } from '../data/backgrounds.ts'
 import { useQuotes } from '../context/quoteContext.ts'
 import { useMediaQuery } from '../hooks/useMediaQuery.ts'
@@ -50,8 +51,13 @@ export default function AppShell() {
             Contact owner: Arthur Kantor ·{' '}
             <a href="mailto:kantorarthur222@gmail.com" className={styles.footerLink}>
               kantorarthur222@gmail.com
-            </a>
+            </a>{' '}
+            ·{' '}
+            <Link to="/privacy" className={styles.footerLink}>
+              Privacy
+            </Link>
           </footer>
+          <CookieBanner />
         </main>
       </div>
     </div>

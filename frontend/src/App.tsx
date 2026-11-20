@@ -14,6 +14,7 @@ import LoginPage from './pages/LoginPage.tsx'
 import RegisterPage from './pages/RegisterPage.tsx'
 import AccountPage from './pages/AccountPage.tsx'
 import AccountSettingsPage from './pages/AccountSettingsPage.tsx'
+import PrivacyPage from './pages/PrivacyPage.tsx'
 import NotFoundPage from './pages/NotFoundPage.tsx'
 
 // Every page renders inside AppShell (background, header, sidebar);
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="register" element={<RegisterPage />} />
         <Route path="account" element={<AccountPage />} />
         <Route path="account/settings" element={<AccountSettingsPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

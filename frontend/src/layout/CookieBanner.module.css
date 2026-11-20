@@ -1,0 +1,66 @@
+/* Room at the end of the page, so the banner never hides the footer for good. */
+.spacer {
+  flex: 0 0 auto;
+  height: 130px;
+}
+
+/* Floats at the bottom of the screen, above the page. */
+.banner {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  z-index: 50;
+  transform: translateX(-50%);
+  width: min(760px, calc(100% - 32px));
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 22px;
+  background: rgba(14, 11, 8, 0.94);
+  border: 1px solid rgba(227, 174, 85, 0.45);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+}
+
+.text {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.title {
+  font-size: 24px;
+  color: var(--color-text);
+}
+
+.link {
+  color: var(--color-accent);
+}
+
+.buttons {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .banner {
+    bottom: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .buttons {
+    flex-direction: column;
+  }
+
+  .spacer {
+    height: 250px;
+  }
+}

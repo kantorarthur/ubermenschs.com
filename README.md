@@ -39,6 +39,8 @@ Once the connection was open, the first byte of the response arrived in 60 ms at
   included), sent as push notifications to every device where they are turned on.
 - **Overview**: the main page with today's events and reminders and the way to every section.
 - **Install as an app** ("Download application"): the browser's install window, or the steps for Safari and Firefox.
+- **Privacy**: a `/privacy` page (what is kept, where, for how long, the user's rights) and a cookie notice: the only
+  cookie is the login cookie, so logging in and registering wait for "Accept"; no analytics, ads or trackers.
 - **Security**: rate limits in Redis for login, registration, password changes and test notifications; CORS
   only for the site's own origins; push notifications only to the known push services.
 

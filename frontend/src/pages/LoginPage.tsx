@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 import Page from '../components/Page.tsx'
 import controls from '../components/Controls.module.css'
 import { useAuth } from '../context/authContext.ts'
+import { useCookieConsent } from '../utils/cookieConsent.ts'
 import styles from './AuthPage.module.css'
 
 // Where to go after logging in: back to the page that sent the visitor here, or Set quotes.
@@ -15,6 +16,8 @@ function useReturnPath(): string {
 export default function LoginPage() {
   const { user, login } = useAuth()
   const navigate = useNavigate()
+  // The login cookie needs the visitor's OK first (the notice at the bottom).
+  const { accepted: cookieAccepted } = useCookieConsent()
   const returnPath = useReturnPath()
 
   const [email, setEmail] = useState('')
@@ -68,9 +71,16 @@ export default function LoginPage() {
         </label>
 
         {error && <p className={controls.error}>{error}</p>}
+        {!cookieAccepted && (
+          <p className={controls.hint}>To log in, first accept the login cookie in the notice at the bottom.</p>
+        )}
 
         <div className={controls.actions}>
-          <button type="submit" className={`${controls.button} ${controls.primary}`} disabled={isSaving}>
+          <button
+            type="submit"
+            className={`${controls.button} ${controls.primary}`}
+            disabled={isSaving || !cookieAccepted}
+          >
             Log in
           </button>
         </div>
