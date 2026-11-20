@@ -1,3 +1,4 @@
+#include "account_deleter.hpp"
 #include "auth_routes.hpp"
 #include "config.hpp"
 #include "crypto.hpp"
@@ -106,6 +107,7 @@ int main(int argc, char** argv)
     PushStore pushSubscriptions(*redis, config.pushAllowedHosts);
     WebPushSender pushSender(*vapidKeys, config.vapidSubject);
     ReminderScheduler scheduler(*redis, pushSubscriptions, pushSender);
+    AccountDeleter accounts(users, sessions, presets, events, reminders, pushSubscriptions);
 
     WebApp app;
     app.loglevel(crow::LogLevel::Info);
@@ -116,7 +118,7 @@ int main(int argc, char** argv)
         return health(*redis);
     });
 
-    addAuthRoutes(app, users, sessions, limiter, config);
+    addAuthRoutes(app, users, sessions, accounts, limiter, config);
     addPresetRoutes(app, presets, sessions);
     addEventRoutes(app, events, sessions);
     addReminderRoutes(app, reminders, sessions);

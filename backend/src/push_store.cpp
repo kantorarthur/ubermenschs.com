@@ -176,6 +176,23 @@ void PushStore::removeById(const std::string& subscriptionId)
     transaction.exec();
 }
 
+void PushStore::removeAll(const std::string& userId)
+{
+    std::vector<std::string> ids;
+    redis_.smembers(userPushKey(userId), std::back_inserter(ids));
+
+    auto transaction = redis_.transaction();
+    for(const std::string& subscriptionId : ids)
+    {
+        // A browser that moved to another account stays with that account.
+        const auto owner = redis_.hget(subscriptionKey(subscriptionId), "userId");
+        if(owner && *owner == userId)
+            transaction.del(subscriptionKey(subscriptionId));
+    }
+    transaction.del(userPushKey(userId));
+    transaction.exec();
+}
+
 std::vector<PushSubscription> PushStore::list(const std::string& userId)
 {
     std::vector<std::string> ids;

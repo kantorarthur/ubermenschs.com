@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import Page from '../components/Page.tsx'
 import controls from '../components/Controls.module.css'
 import { getEvents } from '../api/events.ts'
@@ -25,6 +25,8 @@ const SECTIONS = [
 // "/" — the main page: what the site is, today for a logged-in user, and the way to every section.
 export default function OverviewPage() {
   const { user, isLoading } = useAuth()
+  // Set by Account settings after the account was deleted.
+  const accountDeleted = (useLocation().state as { accountDeleted?: boolean } | null)?.accountDeleted === true
 
   return (
     <Page title="Overview" subtitle="One step closer to the Übermensch than you were yesterday.">
@@ -32,6 +34,12 @@ export default function OverviewPage() {
         ubermenschs.com is a place for a daily practice of becoming better: a philosophical quote on every page, stories
         and passages worth rereading, your calendar and your daily reminders.
       </p>
+
+      {accountDeleted && !user && (
+        <p className={styles.notice} role="status">
+          Your account and all its data were deleted.
+        </p>
+      )}
 
       {!isLoading && (user ? <Today key={user.id} /> : <Welcome />)}
 

@@ -131,3 +131,16 @@ export async function forgetSubscriptionOnServer(): Promise<void> {
     await removeSubscription(subscription.endpoint)
   }
 }
+
+// After the account is deleted: this browser stops being subscribed at its push service too.
+// The backend has already forgotten the subscription, so only the browser is left.
+export async function unsubscribeThisBrowser(): Promise<void> {
+  if (!pushSupported()) {
+    return
+  }
+  const registration = await navigator.serviceWorker.getRegistration()
+  const subscription = await registration?.pushManager.getSubscription()
+  if (subscription) {
+    await subscription.unsubscribe()
+  }
+}

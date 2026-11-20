@@ -9,6 +9,8 @@ export interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>
   register: (email: string, username: string, password: string) => Promise<void>
   logout: () => Promise<void>
+  // Deletes the account after checking the password; afterwards nobody is logged in.
+  deleteAccount: (password: string) => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)

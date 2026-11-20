@@ -85,6 +85,9 @@ public:
     CalendarEvent update(const std::string& userId, const std::string& eventId, const EventInput& input);
     void remove(const std::string& userId, const std::string& eventId);
 
+    // Deletes every event of the user and its notifications (when the account is deleted).
+    void removeAll(const std::string& userId);
+
 private:
     bool owns(const std::string& userId, const std::string& eventId);
     // The notifications of the event that are still in the future: member of events:due → moment.

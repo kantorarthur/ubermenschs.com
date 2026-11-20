@@ -212,3 +212,23 @@ void PresetStore::setActivePreset(const std::string& userId, const std::string& 
 
     redis_.hset(userSettingsKey(userId), "activePreset", presetId);
 }
+
+void PresetStore::removeAll(const std::string& userId)
+{
+    std::vector<std::string> ids;
+    redis_.lrange(userPresetsKey(userId), 0, -1, std::back_inserter(ids));
+
+    auto transaction = redis_.transaction();
+    for(const std::string& presetId : ids)
+    {
+        if(!owns(userId, presetId))
+            continue;
+        for(const std::string& quoteId : quoteIds(presetId))
+            transaction.del(quoteKey(quoteId));
+        transaction.del(presetKey(presetId))
+                   .del(presetQuotesKey(presetId));
+    }
+    transaction.del(userPresetsKey(userId))
+               .del(userSettingsKey(userId));
+    transaction.exec();
+}

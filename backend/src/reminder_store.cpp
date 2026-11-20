@@ -173,3 +173,20 @@ void ReminderStore::remove(const std::string& userId, const std::string& reminde
                .zrem(DUE_REMINDERS_KEY, reminderId);
     transaction.exec();
 }
+
+void ReminderStore::removeAll(const std::string& userId)
+{
+    std::vector<std::string> ids;
+    redis_.smembers(userRemindersKey(userId), std::back_inserter(ids));
+
+    auto transaction = redis_.transaction();
+    for(const std::string& reminderId : ids)
+    {
+        if(!owns(userId, reminderId))
+            continue;
+        transaction.del(reminderKey(reminderId))
+                   .zrem(DUE_REMINDERS_KEY, reminderId);
+    }
+    transaction.del(userRemindersKey(userId));
+    transaction.exec();
+}

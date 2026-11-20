@@ -165,6 +165,29 @@ void UserStore::changePassword(const std::string& userId, const std::string& cur
     redis_.hset(userKey(userId), "passwordHash", hashPassword(checkPassword(newPassword)));
 }
 
+bool UserStore::passwordMatches(const std::string& userId, const std::string& password)
+{
+    const auto hash = redis_.hget(userKey(userId), "passwordHash");
+    return hash && verifyPassword(*hash, password);
+}
+
+void UserStore::remove(const std::string& userId)
+{
+    const auto email = redis_.hget(userKey(userId), "email");
+
+    auto transaction = redis_.transaction();
+    transaction.del(userKey(userId));
+    // The email is free again, unless it already points to another account.
+    if(email)
+    {
+        const auto emailOwner = redis_.get(emailKey(*email));
+        if(emailOwner && *emailOwner == userId)
+            transaction.del(emailKey(*email));
+    }
+    transaction.exec();
+    waitForReplica(transaction.redis());
+}
+
 SessionStore::SessionStore(sw::redis::Redis& redis)
     : redis_(redis)
 {
@@ -223,5 +246,17 @@ void SessionStore::removeAllExcept(const std::string& userId, const std::string&
         transaction.del("session:" + sessionFingerprint)
                    .srem(userSessionsKey(userId), sessionFingerprint);
     }
+    transaction.exec();
+}
+
+void SessionStore::removeAll(const std::string& userId)
+{
+    std::vector<std::string> fingerprints;
+    redis_.smembers(userSessionsKey(userId), std::back_inserter(fingerprints));
+
+    auto transaction = redis_.transaction();
+    for(const std::string& sessionFingerprint : fingerprints)
+        transaction.del("session:" + sessionFingerprint);
+    transaction.del(userSessionsKey(userId));
     transaction.exec();
 }

@@ -62,6 +62,9 @@ public:
     // Forgets a subscription, e.g. when its push service says it no longer exists.
     void removeById(const std::string& subscriptionId);
 
+    // Forgets every browser of the user (when the account is deleted).
+    void removeAll(const std::string& userId);
+
     std::vector<PushSubscription> list(const std::string& userId);
 
 private:

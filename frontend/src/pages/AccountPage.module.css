@@ -53,3 +53,26 @@
   color: var(--color-accent);
   font-size: 14px;
 }
+
+/* Account settings: the "Delete account" form. */
+.warning {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.checkbox input {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-accent);
+}

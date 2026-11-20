@@ -63,6 +63,9 @@ public:
     std::string activePreset(const std::string& userId);
     void setActivePreset(const std::string& userId, const std::string& presetId);
 
+    // Deletes every preset, quote and setting of the user (when the account is deleted).
+    void removeAll(const std::string& userId);
+
 private:
     bool owns(const std::string& userId, const std::string& presetId);
     std::vector<std::string> quoteIds(const std::string& presetId);

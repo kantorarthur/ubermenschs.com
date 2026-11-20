@@ -50,6 +50,13 @@ public:
     void changePassword(const std::string& userId, const std::string& currentPassword,
                         const std::string& newPassword);
 
+    // True if the password is the user's (e.g. before deleting the account).
+    bool passwordMatches(const std::string& userId, const std::string& password);
+
+    // Deletes the account itself: user:{id} and user:by-email:{email}. Its other data is deleted by
+    // AccountDeleter, which calls this last.
+    void remove(const std::string& userId);
+
 private:
     sw::redis::Redis& redis_;
 };
@@ -74,6 +81,9 @@ public:
 
     // Ends every session of the user except the one with keepToken (the device that asked).
     void removeAllExcept(const std::string& userId, const std::string& keepToken);
+
+    // Ends every session of the user (when the account is deleted).
+    void removeAll(const std::string& userId);
 
 private:
     sw::redis::Redis& redis_;
