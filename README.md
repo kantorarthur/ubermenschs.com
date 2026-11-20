@@ -38,6 +38,8 @@ Once the connection was open, the first byte of the response arrived in 60 ms at
 - **Daily reminders**: several per user, each at a fixed time in the user's time zone (summer and winter time
   included), sent as push notifications to every device where they are turned on.
 - **Overview**: the main page with today's events and reminders and the way to every section.
+- **Philosophical stories**: longer texts with quotations from public-domain translations and commentary, e.g.
+  "What is the Übermensch?" (Nietzsche's Zarathustra) and "Et tu, Brute?!" (the betrayal of Julius Caesar).
 - **Philosophical study plan**: 15 books in five stages, from Marcus Aurelius to Nietzsche's Zarathustra; the
   user ticks what they read, sees what comes next with a question to think about, and can add a daily reading
   reminder.
