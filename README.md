@@ -13,7 +13,7 @@ the computer. Live at **https://ubermenschs.com**.
 | **Backend** | **C++20** (GCC 13), [Crow](https://crowcpp.org) (HTTP server), CMake + Ninja, [vcpkg](https://vcpkg.io) (tag `2026.10.16`) |
 | **Database** | **Redis 7** as the only database: AOF written every second + RDB snapshots; locally a primary and a replica |
 | **Backend libraries** | [redis-plus-plus](https://github.com/sewenew/redis-plus-plus) 1.3 + hiredis (Redis client), [libsodium](https://libsodium.org) (Argon2id password hashes, random tokens, BLAKE2b), OpenSSL 3 (Web Push encryption and VAPID signatures), libcurl 8 (sending push notifications), C++20 `<chrono>` time zones (with `tzdata`) |
-| **Frontend** | **React 19** + **TypeScript 7**, **Vite 8**, React Router 8, CSS Modules |
+| **Frontend** | **React 19** + **TypeScript 7**, **Vite 8**, React Router 8, CSS Modules, fonts served from the site itself ([Fontsource](https://fontsource.org): Inter, Instrument Serif) |
 | **PWA** | Web App Manifest, a service worker (`public/sw.js`), Web Push (RFC 8030, encryption RFC 8291, VAPID RFC 8292), installable as an app |
 | **Testing** | GoogleTest (backend, unit + Redis integration tests), Vitest + Testing Library + jsdom (frontend), oxlint |
 | **Infrastructure** | **Docker** (multi-stage build on Ubuntu 24.04), **Docker Compose** (local), **Render** (backend + Redis on a persistent disk, Blueprint in `render.yaml`), **Cloudflare** (Pages for the site, DNS) |
