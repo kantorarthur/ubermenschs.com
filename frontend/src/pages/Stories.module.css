@@ -1,0 +1,190 @@
+/* The list at /stories */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 760px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 20px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(8px);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.card:hover,
+.card:focus-visible {
+  border-color: var(--color-accent);
+}
+
+.meta {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.cardTitle {
+  font-family: var(--font-serif);
+  font-size: 26px;
+}
+
+.cardSummary {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+/* One story */
+.story {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 760px;
+  padding: 28px 32px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(8px);
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.story p {
+  margin: 0;
+}
+
+.back {
+  align-self: flex-start;
+  font-size: 14px;
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+.back:hover {
+  text-decoration: underline;
+}
+
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.title {
+  margin-top: 4px;
+  font-size: 44px;
+  line-height: 1.1;
+}
+
+.epigraph {
+  padding: 18px 22px;
+  border-left: 2px solid var(--color-accent);
+  border-radius: 0 10px 10px 0;
+  background: rgba(227, 174, 85, 0.07);
+}
+
+.epigraphText {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 24px;
+  line-height: 1.35;
+}
+
+.epigraphNote {
+  margin-top: 8px !important;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.heading {
+  margin-top: 10px;
+  font-size: 28px;
+}
+
+.quote {
+  margin: 0;
+  padding: 2px 0 2px 18px;
+  border-left: 2px solid rgba(227, 174, 85, 0.6);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 21px;
+  line-height: 1.45;
+}
+
+.cite {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-sans);
+  font-style: normal;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.label {
+  margin-right: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.bullets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.closing {
+  padding: 18px 10px 6px;
+  border-top: 1px solid var(--color-border);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 26px;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.credits {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 720px) {
+  .story {
+    padding: 20px 16px;
+    font-size: 16px;
+  }
+
+  .title {
+    font-size: 34px;
+  }
+
+  .quote {
+    font-size: 19px;
+  }
+
+  .closing {
+    font-size: 22px;
+  }
+}
