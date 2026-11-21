@@ -6,6 +6,15 @@ A web app for a daily practice of becoming better: a philosophical quote on ever
 passages worth rereading, a calendar and daily reminders that arrive as push notifications on the phone and
 the computer. Live at **https://ubermenschs.com**.
 
+## Documentation
+
+<p align="center">
+  <a href="docs/pages/02.md"><img src="docs/pages/page-01.png" width="420" alt="Documentation, page 1 of 22"></a>
+</p>
+
+<p align="center">◀ Previous &nbsp;·&nbsp; <b>Page 1 of 22</b> &nbsp;·&nbsp; <a href="docs/pages/02.md">Next ▶</a></p>
+<p align="center"><a href="docs/Documentation_ubermenschs.pdf">📄 Read the whole documentation (PDF, 22 pages)</a></p>
+
 ## Tech stack
 
 | Part | Technologies |
