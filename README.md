@@ -34,6 +34,23 @@ Once the connection was open, the first byte of the response arrived in 60 ms at
 
 <img width="697" height="137" alt="Image" src="https://github.com/user-attachments/assets/7bc9da2c-558c-44db-b2f5-4901888dac41" />
 
+## UML Diagrams
+
+### Packages
+<img width="1600" height="1440" alt="03_packages" src="https://github.com/user-attachments/assets/a89d5fee-d547-4662-97f0-7d013ee0b6eb" />
+
+### User Use-case
+
+<img width="1240" height="1760" alt="01_use_case" src="https://github.com/user-attachments/assets/3067cd71-4019-4755-a695-d7054acaadec" />
+
+### Class Accounts
+
+<img width="2020" height="1440" alt="04a_class_accounts" src="https://github.com/user-attachments/assets/00ee365d-d5c6-40ab-896d-a6a350cda692" />
+
+### Deployment
+
+<img width="2060" height="920" alt="08_deployment" src="https://github.com/user-attachments/assets/e325b868-9c9b-4eb9-871f-cab7ba3d98e2" />
+
 ## Features
 
 - **Quotes in the header**: a random quote and background painting on every page, from the active quote set;
